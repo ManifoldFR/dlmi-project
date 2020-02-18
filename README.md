@@ -2,12 +2,12 @@
 
 DRIVE data is located in
 ```
-data/
+data/drive
     - training
     - test
 ```
 
 STARE
 ```
-stare/
+data/stare/
 ```
