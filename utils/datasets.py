@@ -10,9 +10,14 @@ from PIL import Image
 
 
 class DriveDataset(VisionDataset):
+    """DRIVE vessel segmentation dataset.
+    
+    Args:
+        transforms: applies to both image and target
+    """
     
     def __init__(self, root, transforms=None, transform=None, target_transform=None, train=False):
-        super().__init__(root, transforms=transforms, transform=transform, target_transform=target_transform)
+        super().__init__(root, transforms, transform, target_transform)
     
         self.train = train
         self.images = sorted(glob.glob(os.path.join(root, "images/*.tif")))
@@ -21,24 +26,29 @@ class DriveDataset(VisionDataset):
         if train:
             self.targets = sorted(glob.glob(os.path.join(root, "1st_manual/*.gif")))
 
+    def __len__(self):
+        return len(self.images)
+
     def __getitem__(self, index):
         img_path = self.images[index]
         mask_path = self.masks[index]
         img = cv2.cvtColor(cv2.imread(img_path), cv2.COLOR_BGR2RGB)
-        mask = Image.open(mask_path)
+        mask = np.asarray(Image.open(mask_path))
+        img = np.dstack([img, mask])
 
         if self.train:
             tgt_path = self.targets[index]
             target = Image.open(tgt_path)
-            return img, np.asarray(mask), np.asarray(target)
+            return img, np.asarray(target)
         else:
-            return img, np.asarray(mask)
+            return img
 
 
 def test_drive():
     dataset = DriveDataset("data/drive/test", False)
     res = dataset[0]
-    img, mask = res
+    img = res[...,:3]
+    mask = res[...,3]
 
     import matplotlib.pyplot as plt
     
@@ -50,6 +60,7 @@ def test_drive():
     plt.imshow(mask, cmap="gray")
     plt.title("Mask")
     plt.show()
+    return dataset
 
 if __name__ == "__main__":
-    test_drive()
+    dataset = test_drive()
