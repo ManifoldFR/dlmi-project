@@ -1,3 +1,4 @@
 pillow
 py-opencv
 pytorch
+albumentations>=0.4.4
