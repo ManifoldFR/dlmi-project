@@ -1,3 +1,7 @@
+# IDE config files should not be committed
+.vscode
+.idea
+
 *.pyc
 *.so
 *.dll
