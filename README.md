@@ -33,5 +33,5 @@ The layout of the data is
 ```
 data/stare/
     - images  # images
-    - mask    # labels
+    - labels    # labels
 ```
