@@ -2,7 +2,7 @@
 import torch
 
 
-from datasets import DriveDataset
+from utils.datasets import DriveDataset, STAREDataset
 
 from albumentations import Compose, Normalize, RandomCrop, Resize
 from albumentations import HorizontalFlip, Rotate, GaussianBlur
