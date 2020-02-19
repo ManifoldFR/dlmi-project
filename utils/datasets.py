@@ -15,12 +15,11 @@ class DriveDataset(VisionDataset):
     https://github.com/choosehappy/PytorchDigitalPathology/blob/master/segmentation_epistroma_unet/train_unet_albumentations.py
     
     Args:
-        transforms: applies to both image and target
+        transforms: applies to both image, mask and target segmentation mask (when available).
     """
     
-    def __init__(self, root: str, transforms=None, train=False):
+    def __init__(self, root: str, transforms=None, train: bool=False):
         super().__init__(root, transforms=transforms)
-    
         self.train = train
         self.images = sorted(glob.glob(os.path.join(root, "images/*.tif")))
         self.masks = sorted(glob.glob(os.path.join(root, "mask/*.gif")))
@@ -55,19 +54,26 @@ class DriveDataset(VisionDataset):
                 img[mask == 1] = 0
             return img
 
-if __name__ == "__main__":
-    dataset = DriveDataset("data/drive/training", train=True)
-    img, target = dataset[0]
+
+class STAREDataset(VisionDataset):
+    """STARE (STructured Analysis of the Retina) retinography dataset
+    http://cecas.clemson.edu/~ahoover/stare/.
     
-    import matplotlib.pyplot as plt
-    
-    fig = plt.figure(figsize=(7, 4))
-    plt.subplot(121)
-    plt.imshow(img)
-    plt.title("Original image")
-    
-    plt.subplot(122)
-    plt.imshow(target, cmap="gray")
-    plt.title("Vessel segmentation")
-    plt.tight_layout()
-    plt.show()
+    """
+    def __init__(self, root: str, transforms=None):
+        super().__init__(root, transforms=transforms)
+        self.images = sorted(glob.glob(os.path.join(root, "images/*.ppm")))
+        self.targets = sorted(glob.glob(os.path.join(root, "mask/*.ah.ppm")))
+
+    def __len__(self):
+        return len(self.images)
+
+    def __getitem__(self, index):
+        img = cv2.imread(self.images[index])
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        target = cv2.imread(self.targets[index], cv2.IMREAD_UNCHANGED)
+        if self.transforms is not None:
+            augmented = self.transforms(image=img, mask=target)
+            img = augmented['image']
+            target = augmented['mask']
+        return img, target
