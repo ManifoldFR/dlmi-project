@@ -4,8 +4,9 @@ import os
 import numpy as np
 import pandas as pd
 
-PROJECT_FOLDER="C:\\Users\\Philo\\Documents\\3A -- MVA\\DL for medical imaging\\retine\\dlmi-project\\"
-DATA_FOLDER = os.path.join(PROJECT_FOLDER,"data", "stare")
+# PROJECT_FOLDER="C:\\Users\\Philo\\Documents\\3A -- MVA\\DL for medical imaging\\retine\\dlmi-project\\"
+# DATA_FOLDER = os.path.join(PROJECT_FOLDER,"data", "stare")
+DATA_FOLDER = os.path.join("data", "stare")
 print(DATA_FOLDER)
 diagnose=pd.read_excel(os.path.join(DATA_FOLDER,"diagnose.xls"))
 
