@@ -6,6 +6,9 @@
 *.so
 *.dll
 
+*.jpg
+*.jpeg
+*.png
 *.ppm
 *.tif
 *.tiff
