@@ -31,7 +31,7 @@ class _DownBlock(nn.Module):
     Downsamples using MaxPooling then applies ConvBlock.
     """
 
-    def __init__(self, in_channels, out_channels, n_convs=3):
+    def __init__(self, in_channels, out_channels, n_convs=2):
         super().__init__()
         layers = [
             ConvBlock(in_channels, out_channels)
@@ -55,7 +55,7 @@ class _UpBlock(nn.Module):
     Applies `~ConvBlock`, then upsampling deconvolution.
     """
 
-    def __init__(self, in_channels, out_channels, n_convs=3, n_connect=2):
+    def __init__(self, in_channels, out_channels, n_convs=2, n_connect=2):
         """
         
         Parameters
@@ -73,6 +73,7 @@ class _UpBlock(nn.Module):
             for _ in range(n_convs-2)
         ]
         self.conv = nn.Sequential(*layers)
+        # counts as one convolution
         self.ups = nn.ConvTranspose2d(in_channels, out_channels,
                                       2, stride=2)
 
@@ -89,7 +90,7 @@ class UNet(nn.Module):
     See https://arxiv.org/pdf/1505.04597.pdf 
     """
 
-    def __init__(self, num_channels: int, num_classes: int = 2):
+    def __init__(self, num_channels: int = 3, num_classes: int = 2):
         """Initialize a U-Net.
         
         Parameters
@@ -119,9 +120,11 @@ class UNet(nn.Module):
         self.up2 = _UpBlock(256, 128)
         self.up3 = _UpBlock(128, 64)
 
-        # binary classification
-        self.out_conv = ConvBlock(128, 64)
-        self.labels_conv = nn.Conv2d(64, num_classes, 3, padding=1)
+        self.out_conv = nn.Sequential(
+            ConvBlock(128, 64),
+            ConvBlock(64, 64),
+            nn.Conv2d(64, num_classes, 3, padding=1)
+        )
         self.activation = nn.Softmax(dim=0)
 
     def forward(self, x: Tensor):
@@ -134,9 +137,8 @@ class UNet(nn.Module):
         x = self.up2(x, x3)  # 128 * 1/2 * 1/2 112
         x = self.up3(x, x2)
         z = torch.cat((x1, x), dim=1)
-        out = self.out_conv(z)
-        labels = self.activation(self.labels_conv(out))
-        return labels
+        out = self.activation(self.out_conv(z))
+        return out
 
 
 class AttentionGate(nn.Module):
@@ -229,10 +231,13 @@ class AttentionUNet(nn.Module):
         self.att3 = AttentionGate(128, 128, 32)
         self.up3 = _UpBlock(128, 64)
 
-        # binary classification
         self.att4 = AttentionGate(64, 64, 16)
-        self.out_conv = ConvBlock(2 * 64, 64)
-        self.labels_conv = nn.Conv2d(64, num_classes, 3, padding=1)
+        self.out_conv = nn.Sequential(
+            ConvBlock(128, 64),
+            ConvBlock(64, 64),
+            nn.Conv2d(64, num_classes, 3, padding=1)
+        )
+
         self.activation = nn.Softmax(dim=0)
 
     def forward(self, x: Tensor):
@@ -249,6 +254,5 @@ class AttentionUNet(nn.Module):
         x = self.up3(x, alp3 * x2)
         alp4 = self.att4(x, x1)
         z = torch.cat((alp4 * x1, x), dim=1)
-        out = self.out_conv(z)
-        labels = self.activation(self.labels_conv(out))
-        return labels
+        out = self.activation(self.out_conv(z))
+        return out
