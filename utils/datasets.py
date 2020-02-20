@@ -63,7 +63,8 @@ class STAREDataset(VisionDataset):
     def __init__(self, root: str, transforms=None):
         super().__init__(root, transforms=transforms)
         self.images = sorted(glob.glob(os.path.join(root, "images/*.ppm")))
-        self.targets = sorted(glob.glob(os.path.join(root, "mask/*.ah.ppm")))
+        # type of label used is fixed (hard coded)
+        self.targets = sorted(glob.glob(os.path.join(root, "labels/labels_vk/*.ppm")))
 
     def __len__(self):
         return len(self.images)

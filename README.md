@@ -33,5 +33,8 @@ The layout of the data is
 ```
 data/stare/
     - images  # images
-    - labels    # labels
+    - labels/ # labels
+        - labels_ah
+        - labels_vk
+        - results_hoover
 ```
