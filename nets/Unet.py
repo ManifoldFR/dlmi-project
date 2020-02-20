@@ -5,12 +5,15 @@ from torch import nn, Tensor
 class ConvBlock(nn.Module):
     """Basic convolutional block."""
 
-    def __init__(self, in_channels, out_channels):
+    def __init__(self, in_channels, out_channels, norm='batch', num_groups=4):
         super().__init__()
         # choice of padding=1 keeps
         # feature map dimensions identical
         self.conv = nn.Conv2d(in_channels, out_channels, 3, padding=1)
-        self.bn = nn.BatchNorm2d(out_channels)
+        if norm == 'batch':
+            self.bn = nn.BatchNorm2d(out_channels)
+        elif norm == 'group':
+            self.bn = nn.GroupNorm(num_groups, out_channels)
         self.activation = nn.ReLU()
 
     def forward(self, x: Tensor):
