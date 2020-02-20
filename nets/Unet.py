@@ -70,17 +70,17 @@ class _UpBlock(nn.Module):
             ConvBlock(n_connect * in_channels, in_channels)
         ] + [
             ConvBlock(in_channels, in_channels)
-            for _ in range(n_convs-2)
+            for _ in range(n_convs-1)
         ]
         self.conv = nn.Sequential(*layers)
         # counts as one convolution
-        self.ups = nn.ConvTranspose2d(in_channels, out_channels,
-                                      2, stride=2)
+        self.upconv = nn.ConvTranspose2d(in_channels, out_channels,
+                                         2, stride=2)
 
     def forward(self, x: Tensor, skip: Tensor) -> Tensor:
         z = torch.cat((skip, x), dim=1)
         z = self.conv(z)
-        out = self.ups(z)  # deconvolve
+        out = self.upconv(z)  # deconvolve
         return out
 
 
@@ -123,7 +123,7 @@ class UNet(nn.Module):
         self.out_conv = nn.Sequential(
             ConvBlock(128, 64),
             ConvBlock(64, 64),
-            nn.Conv2d(64, num_classes, 3, padding=1)
+            nn.Conv2d(64, num_classes, kernel_size=1, padding=0)
         )
         self.activation = nn.Softmax(dim=0)
 
@@ -235,7 +235,7 @@ class AttentionUNet(nn.Module):
         self.out_conv = nn.Sequential(
             ConvBlock(128, 64),
             ConvBlock(64, 64),
-            nn.Conv2d(64, num_classes, 3, padding=1)
+            nn.Conv2d(64, num_classes, kernel_size=1, padding=0)
         )
 
         self.activation = nn.Softmax(dim=0)
