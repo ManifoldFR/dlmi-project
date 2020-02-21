@@ -2,6 +2,8 @@
 .vscode
 .idea
 
+.ipynb_checkpoints
+
 *.pyc
 *.so
 *.dll
@@ -15,3 +17,6 @@
 *.tiff
 *.gif
 *.gz
+
+# saved models
+*.pth

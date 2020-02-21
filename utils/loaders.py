@@ -34,26 +34,20 @@ def make_train_transform(to_tensor=False):
 # Default train transform converts to Tensor
 train_transform = make_train_transform(True)
 
-val_loader = Compose([
+val_transform = Compose([
     Resize(448, 448),
+    Normalize(),
     ToTensor(),
 ])
 
+DRIVE_SUBSET_TRAIN = slice(0, 16)
+DRIVE_SUBSET_VAL = slice(16, 23)
+
 train_dataset = DriveDataset("data/drive/training",
                              transforms=train_transform,
-                             train=True)
+                             train=True, subset=DRIVE_SUBSET_TRAIN)
 
+val_dataset = DriveDataset("data/drive/training",
+                             transforms=val_transform,
+                             train=True, subset=DRIVE_SUBSET_VAL)
 
-if __name__ == "__main__":    
-    import matplotlib.pyplot as plt
-
-    img, target = train_dataset[0]
-
-    plt.figure(figsize=(9, 4))
-    plt.subplot(121)
-    plt.imshow(img)
-
-    plt.subplot(122)
-    plt.imshow(target, cmap="gray")
-    plt.tight_layout()
-    plt.show()
