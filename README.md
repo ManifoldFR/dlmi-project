@@ -38,3 +38,7 @@ data/stare/
         - labels_vk
         - results_hoover
 ```
+
+### Data augmentation
+
+The data augmentation can be visualized in a [notebook](augmentations-demo.ipynb).
