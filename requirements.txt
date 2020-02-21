@@ -2,4 +2,4 @@ pillow
 py-opencv
 pytorch
 torchvision>=0.5.0
-albumentations>=0.4.4
+albumentations>=0.4.3

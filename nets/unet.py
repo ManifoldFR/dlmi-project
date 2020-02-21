@@ -137,7 +137,7 @@ class UNet(nn.Module):
         x = self.up2(x, x3)  # 128 * 1/2 * 1/2 112
         x = self.up3(x, x2)
         z = torch.cat((x1, x), dim=1)
-        out = self.activation(self.out_conv(z))
+        out = self.out_conv(z)
         return out
 
 
@@ -254,5 +254,5 @@ class AttentionUNet(nn.Module):
         x = self.up3(x, alp3 * x2)
         alp4 = self.att4(x, x1)
         z = torch.cat((alp4 * x1, x), dim=1)
-        out = self.activation(self.out_conv(z))
+        out = self.out_conv(z)
         return out

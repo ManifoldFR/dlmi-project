@@ -38,20 +38,20 @@ class DriveDataset(VisionDataset):
 
         if self.train:
             tgt_path = self.targets[index]
-            target = Image.open(tgt_path)
-            target = np.asarray(target)
+            target = np.asarray(Image.open(tgt_path))
             if self.transforms is not None:
                 augmented = self.transforms(image=img, masks=[mask, target])
                 img = augmented['image']
                 mask, target = augmented['masks']
-                img[mask == 1] = 0
-            return img, target
+                img[:, mask == 1] = 0
+                target = target.astype(int) / 255
+            return img, torch.from_numpy(target).long()
         else:
             if self.transforms is not None:
                 augmented = self.transforms(image=img, mask=mask)
                 img = augmented['image']
                 mask = augmented['mask']
-                img[mask == 1] = 0
+                img[:, mask == 1] = 0
             return img
 
 
