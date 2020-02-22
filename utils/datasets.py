@@ -18,7 +18,7 @@ class DriveDataset(VisionDataset):
         transforms: applies to both image, mask and target segmentation mask (when available).
     """
     
-    def __init__(self, root: str, transforms=None, train: bool=False, subset: slice=None):
+    def __init__(self, root: str, transforms=None, train: bool=False, subset: slice=None, return_mask=False):
         """
         Parameters
         ----------
@@ -27,6 +27,7 @@ class DriveDataset(VisionDataset):
         """
         super().__init__(root, transforms=transforms)
         self.train = train
+        self.use_mask = return_mask
         self.images = sorted(glob.glob(os.path.join(root, "images/*.tif")))
         self.masks = sorted(glob.glob(os.path.join(root, "mask/*.gif")))
         if subset is not None:
@@ -54,23 +55,27 @@ class DriveDataset(VisionDataset):
                 augmented = self.transforms(image=img, masks=[mask, target])
                 img = augmented['image']
                 mask, target = augmented['masks']
-                mask_ones = mask == 1
+                mask_zeros = mask == 0
                 if isinstance(img, np.ndarray):
-                    img[mask_ones] = 0
+                    img[mask_zeros] = 0
                 else:
-                    img[:, mask_ones] = 0
+                    img[:, mask_zeros] = 0
                 target = target.astype(int) / 255
+            if self.use_mask:
+                return img, torch.from_numpy(mask).long(), torch.from_numpy(target).long()
             return img, torch.from_numpy(target).long()
         else:
             if self.transforms is not None:
                 augmented = self.transforms(image=img, mask=mask)
                 img = augmented['image']
                 mask = augmented['mask']
-                mask_ones = mask == 1
+                mask_zeros = mask == 0
                 if isinstance(np.ndarray, img):
-                    img[mask_ones] = 0
+                    img[mask_zeros] = 0
                 else:
-                    img[:, mask_ones] = 0
+                    img[:, mask_zeros] = 0
+            if self.use_mask:
+                return img, torch.from_numpy(mask).long()
             return img
 
 
