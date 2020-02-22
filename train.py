@@ -1,9 +1,12 @@
+import os
 import tqdm
 import numpy as np
 import torch
 from torch import nn
+import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
+from utils import losses
 from utils.loaders import train_dataset, val_dataset
 from nets.unet import UNet, AttentionUNet
 
@@ -15,7 +18,8 @@ MODEL_DICT = {
 }
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--model", type=str, choices=list(MODEL_DICT.keys()))
+parser.add_argument("--model", type=str, choices=list(MODEL_DICT.keys()),
+                    required=True)
 parser.add_argument("--epochs", "-E", default=10, type=int)
 parser.add_argument("--batch-size", "-B", default=1, type=int)
 parser.add_argument("--lr", "-lr", default=1e-4, type=float)
@@ -24,7 +28,7 @@ parser.add_argument("--lr", "-lr", default=1e-4, type=float)
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
-def train(model, loader, criterion, optimizer):
+def train(model, loader, criterion, optimizer, epoch, writer: SummaryWriter=None):
     model.train()
     all_loss = []
     
@@ -45,7 +49,12 @@ def train(model, loader, criterion, optimizer):
         optimizer.zero_grad()
         
         all_loss.append(loss.item())
-    return np.mean(all_loss)
+    if writer is not None:
+        fig = plot_prediction(img, output, target)
+        writer.add_figure("Train/Prediction",  fig)
+        
+    mean_loss = np.mean(all_loss)
+    return mean_loss
 
 def validate(model, loader, criterion, val_criterion):
     model.eval()
@@ -68,61 +77,74 @@ def validate(model, loader, criterion, val_criterion):
         return np.mean(all_loss), np.mean(all_acc)
 
 
-SMOOTH = 1e-6
-
-def iou_pytorch(outputs: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
-    # You can comment out this line if you are passing tensors of equal shape
-    # But if you are passing output from UNet or something it will most probably
-    # be with the BATCH x 1 x H x W shape
-    outputs = outputs.squeeze(1)  # BATCH x 1 x H x W => BATCH x H x W
-    intersection = (outputs & labels).float().sum(
-        (1, 2))  # Will be zero if Truth=0 or Prediction=0
-    union = (outputs | labels).float().sum(
-        (1, 2))         # Will be zzero if both are 0
-
-    # We smooth our devision to avoid 0/0
-    iou = (intersection + SMOOTH) / (union + SMOOTH)
-
-    # This is equal to comparing with thresolds
-    thresholded = torch.clamp(20 * (iou - 0.5), 0, 10).ceil() / 10
-
-    # Or thresholded.mean() if you are interested in average across the batch
-    return thresholded
-
+def plot_prediction(img: torch.Tensor, pred_mask: torch.Tensor, target: torch.Tensor):
+    """
+    
+    """
+    import matplotlib.pyplot as plt
+    from typing import Tuple
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3)
+    fig: plt.Figure
+    img = img.data.numpy()
+    pred_mask = pred_mask.data.numpy()
+    target = target.data.numpy()
+    
+    ax1.imshow(img)
+    ax1.set_title("Base image")
+    ax2.imshow(pred_mask)
+    ax2.set_title("Predicted mask")
+    ax3.imshow(target)
+    ax3.set_title("Real mask")
+    
+    fig.tight_layout()
+    return fig
 
 
 if __name__ == "__main__":
+    os.makedirs("models", exist_ok=True)
     print("Using device %s" % device)
     args = parser.parse_args()
     
     EPOCHS = args.epochs
     BATCH_SIZE = args.batch_size
-
+    
     print("Training model %s" % args.model)
+    
+    # Define TensorBoard summary
+    comment = "DRIVE-%s" % args.model
+    writer = SummaryWriter(comment=comment)
+
+    # Make model
     model_class = MODEL_DICT[args.model]
-    model = UNet(num_classes=2)  # binary class
+    model = UNet(num_classes=2)  # binary classification
     model = model.to(device)
     
+    # Define optimizer and metrics
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
+    criterion = nn.CrossEntropyLoss(reduction='mean')
+    val_criterion = losses.iou_pytorch  # validation criterion -- iou
+
+    # Define loaders
     train_loader = DataLoader(train_dataset, BATCH_SIZE, shuffle=True)
     val_loader = DataLoader(val_dataset, BATCH_SIZE, shuffle=False)
 
-    criterion = nn.CrossEntropyLoss(reduction='mean')
-    val_criterion = iou_pytorch
-    for e in range(EPOCHS):
-        loss = train(model, train_loader, criterion, optimizer)
+    for epoch in range(EPOCHS):
+        loss = train(model, train_loader, criterion, optimizer, epoch, writer)
         val_loss, val_acc = validate(model, val_loader, criterion, val_criterion)
-        print("Epoch {:d}: Loss {:.3g} | Validation loss {:.3g} -- IoU {:.3g}".format(e, loss, val_loss, val_acc))
+        print("Epoch {:d}: Loss {:.3g} | Validation loss {:.3g} -- IoU {:.3g}".format(epoch, loss, val_loss, val_acc))
 
-        save_path = "models/%s_drive_%d.pth" % (args.model, e)
+        writer.add_scalar("Train/Loss", loss, epoch)
+        writer.add_scalar("Validation/Loss", val_loss, epoch)
+        writer.add_scalar("Validation/IoU", val_acc, epoch)
 
+        save_path = "models/%s_drive_%03d.pth" % (args.model, epoch)
+        
         torch.save({
-            'epoch': e,
+            'epoch': epoch,
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
             'loss': loss,
             'val_loss': val_loss,
             'val_acc': val_acc,
         }, save_path)
-    
-    
+    writer.close()    

@@ -20,3 +20,5 @@
 
 # saved models
 *.pth
+# logs
+runs/
