@@ -34,7 +34,7 @@ def soft_dice_loss(input: torch.Tensor, labels: torch.Tensor, softmax=True) -> t
     softmax : bool
         Whether to apply `F.softmax` to input to get class probabilities.
     """
-    labels = F.one_hot(labels, )
+    labels = F.one_hot(labels).permute(0, 3, 1, 2)
     dims = (1, 2, 3)  # sum over C, H, W
     if softmax:
         input = F.softmax(input, dim=1)
@@ -42,3 +42,8 @@ def soft_dice_loss(input: torch.Tensor, labels: torch.Tensor, softmax=True) -> t
     cardinal = torch.sum(input + labels, dim=dims)
     ratio = intersect / (cardinal + EPSILON)
     return torch.mean(1 - 2. * ratio)
+
+
+def combined_loss(input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+    """CE + Dice"""
+    return F.cross_entropy(input, target, reduction="mean") + soft_dice_loss(input, target)
