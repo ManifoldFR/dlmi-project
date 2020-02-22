@@ -20,17 +20,18 @@ MODEL_DICT = {
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", type=str, choices=list(MODEL_DICT.keys()),
                     required=True)
-parser.add_argument("--epochs", "-E", default=10, type=int)
+parser.add_argument("--epochs", "-E", default=30, type=int)
 parser.add_argument("--batch-size", "-B", default=1, type=int)
-parser.add_argument("--lr", "-lr", default=1e-4, type=float)
+parser.add_argument("--lr", "-lr", default=2e-4, type=float)
 
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
-def train(model, loader, criterion, optimizer, epoch, writer: SummaryWriter=None):
+def train(model, loader, criterion, metric, optimizer, epoch, writer: SummaryWriter=None):
     model.train()
     all_loss = []
+    all_acc = []
     
     for idx, (img, target) in tqdm.tqdm(enumerate(loader), desc='Training'):
         img = img.to(device)
@@ -42,6 +43,8 @@ def train(model, loader, criterion, optimizer, epoch, writer: SummaryWriter=None
 
         output = model(img)
         loss = criterion(output, target)
+        pred = torch.argmax(output, dim=1, keepdim=True)
+        acc = metric(pred, target)
         
         loss.backward()
         
@@ -49,14 +52,15 @@ def train(model, loader, criterion, optimizer, epoch, writer: SummaryWriter=None
         optimizer.zero_grad()
         
         all_loss.append(loss.item())
+        all_acc.append(acc.item())
     if writer is not None:
-        fig = plot_prediction(img, output, target)
-        writer.add_figure("Train/Prediction",  fig)
+        fig = plot_prediction(img[0], output[0], target[0])
+        writer.add_figure("Train/Prediction",  fig, epoch)
         
     mean_loss = np.mean(all_loss)
-    return mean_loss
+    return mean_loss, np.mean(all_acc)
 
-def validate(model, loader, criterion, val_criterion):
+def validate(model, loader, criterion, metric):
     model.eval()
     with torch.no_grad():
         all_loss = []
@@ -70,7 +74,7 @@ def validate(model, loader, criterion, val_criterion):
             output = model(img)
             loss = criterion(output, target)
             pred = torch.argmax(output, dim=1, keepdim=True)
-            acc = val_criterion(pred, target)
+            acc = metric(pred, target)
 
             all_loss.append(loss.item())
             all_acc.append(acc.item())
@@ -83,16 +87,18 @@ def plot_prediction(img: torch.Tensor, pred_mask: torch.Tensor, target: torch.Te
     """
     import matplotlib.pyplot as plt
     from typing import Tuple
-    fig, (ax1, ax2, ax3) = plt.subplots(1, 3)
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(12, 5))
     fig: plt.Figure
-    img = img.data.numpy()
-    pred_mask = pred_mask.data.numpy()
-    target = target.data.numpy()
+    img = img.data.cpu().numpy()
+    img = np.moveaxis(img, 0, -1)
+    pred_mask = F.softmax(pred_mask.data, dim=1).cpu().numpy()
+    pred_mask = pred_mask[1]
+    target = target.data.cpu().numpy()
     
     ax1.imshow(img)
     ax1.set_title("Base image")
     ax2.imshow(pred_mask)
-    ax2.set_title("Predicted mask")
+    ax2.set_title("Mask probability map")
     ax3.imshow(target)
     ax3.set_title("Real mask")
     
@@ -111,7 +117,7 @@ if __name__ == "__main__":
     print("Training model %s" % args.model)
     
     # Define TensorBoard summary
-    comment = "DRIVE-%s" % args.model
+    comment = "DRIVE-%s-combinedLoss" % args.model
     writer = SummaryWriter(comment=comment)
 
     # Make model
@@ -120,23 +126,27 @@ if __name__ == "__main__":
     model = model.to(device)
     
     # Define optimizer and metrics
+    print("Learning rate: {:.3g}".format(args.lr))
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
-    criterion = nn.CrossEntropyLoss(reduction='mean')
-    val_criterion = losses.iou_pytorch  # validation criterion -- iou
+    # criterion = nn.CrossEntropyLoss(reduction='mean')
+    criterion = losses.combined_loss
+    metric = losses.iou_pytorch  # validation criterion -- iou
 
     # Define loaders
     train_loader = DataLoader(train_dataset, BATCH_SIZE, shuffle=True)
     val_loader = DataLoader(val_dataset, BATCH_SIZE, shuffle=False)
 
     for epoch in range(EPOCHS):
-        loss = train(model, train_loader, criterion, optimizer, epoch, writer)
-        val_loss, val_acc = validate(model, val_loader, criterion, val_criterion)
-        print("Epoch {:d}: Loss {:.3g} | Validation loss {:.3g} -- IoU {:.3g}".format(epoch, loss, val_loss, val_acc))
+        loss, acc = train(model, train_loader, criterion, metric, optimizer, epoch, writer)
+        val_loss, val_acc = validate(model, val_loader, criterion, metric)
+        print("Epoch {:d}: Train loss {:.3g} -- IoU {:.3g} | Validation loss {:.3g} -- IoU {:.3g}".format(
+            epoch, loss, acc, val_loss, val_acc))
 
         writer.add_scalar("Train/Loss", loss, epoch)
+        writer.add_scalar("Train/IoU", acc, epoch)
         writer.add_scalar("Validation/Loss", val_loss, epoch)
         writer.add_scalar("Validation/IoU", val_acc, epoch)
-
+        
         save_path = "models/%s_drive_%03d.pth" % (args.model, epoch)
         
         torch.save({
