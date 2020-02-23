@@ -3,4 +3,5 @@ py-opencv
 pytorch
 torchvision>=0.5.0
 tensorboard
+captum
 albumentations>=0.4.3

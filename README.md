@@ -10,10 +10,11 @@ conda install -c conda-forge imgaug
 conda install -c albumentations albumentations
 ```
 
-Test that the dataset and data augmentation works:
+We use PyTorch's TensorBoard integration to see metrics and some segmentation results during training
 ```bash
-python utils/loaders.py
+tensorboard --logdir runs/
 ```
+
 
 ## Data
 
@@ -39,6 +40,10 @@ data/stare/
         - results_hoover
 ```
 
-### Data augmentation
+
+Test that the dataset and data augmentation works:
+```bash
+python utils/loaders.py
+```
 
 The data augmentation can be visualized in a [notebook](augmentations-demo.ipynb).
