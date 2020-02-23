@@ -39,24 +39,23 @@ def train(model, loader, criterion, metric, optimizer, epoch, writer: SummaryWri
         # for 1 class, add dim 1
         target.unsqueeze(1)
         target = target.to(device)
-        
-
         output = model(img)
         loss = criterion(output, target)
         pred = torch.argmax(output, dim=1, keepdim=True)
         acc = metric(pred, target)
         
         loss.backward()
-        
         optimizer.step()
         optimizer.zero_grad()
         
         all_loss.append(loss.item())
         all_acc.append(acc.item())
+    
+    writer.add_graph(model, img)
+    
     if writer is not None:
         fig = plot_prediction(img[0], output[0], target[0])
         writer.add_figure("Train/Prediction",  fig, epoch)
-        
     mean_loss = np.mean(all_loss)
     return mean_loss, np.mean(all_acc)
 
@@ -83,23 +82,23 @@ def validate(model, loader, criterion, metric):
 
 def plot_prediction(img: torch.Tensor, pred_mask: torch.Tensor, target: torch.Tensor):
     """
-    
+    Plot the original image, heatmap of predicted class probabilities, and target mask.
     """
     import matplotlib.pyplot as plt
     from typing import Tuple
-    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(12, 5))
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(12, 5), dpi=60)
     fig: plt.Figure
-    img = img.data.cpu().numpy()
+    img = img.data.cpu().numpy()  # put on CPU and Numpy
     img = np.moveaxis(img, 0, -1)
-    pred_mask = F.softmax(pred_mask.data, dim=1).cpu().numpy()
-    pred_mask = pred_mask[1]
+    pred_mask = F.softmax(pred_mask.data.cpu(), dim=1).numpy()
+    pred_mask = pred_mask[1]  # class 1
     target = target.data.cpu().numpy()
     
     ax1.imshow(img)
     ax1.set_title("Base image")
     ax2.imshow(pred_mask)
     ax2.set_title("Mask probability map")
-    ax3.imshow(target)
+    ax3.imshow(target, cmap="gray")
     ax3.set_title("Real mask")
     
     fig.tight_layout()
@@ -135,6 +134,8 @@ if __name__ == "__main__":
     # Define loaders
     train_loader = DataLoader(train_dataset, BATCH_SIZE, shuffle=True)
     val_loader = DataLoader(val_dataset, BATCH_SIZE, shuffle=False)
+    
+    CHECKPOINT_EVERY = 2
 
     for epoch in range(EPOCHS):
         loss, acc = train(model, train_loader, criterion, metric, optimizer, epoch, writer)
@@ -149,12 +150,16 @@ if __name__ == "__main__":
         
         save_path = "models/%s_drive_%03d.pth" % (args.model, epoch)
         
-        torch.save({
-            'epoch': epoch,
-            'model_state_dict': model.state_dict(),
-            'optimizer_state_dict': optimizer.state_dict(),
-            'loss': loss,
-            'val_loss': val_loss,
-            'val_acc': val_acc,
-        }, save_path)
+        if (epoch+1) % CHECKPOINT_EVERY == 0:
+        
+            # Save checkpoint
+            torch.save({
+                'epoch': epoch,
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'loss': loss,
+                'val_loss': val_loss,
+                'val_acc': val_acc,
+            }, save_path)
+
     writer.close()    
