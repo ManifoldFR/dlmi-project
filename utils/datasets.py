@@ -18,14 +18,27 @@ class DriveDataset(VisionDataset):
         transforms: applies to both image, mask and target segmentation mask (when available).
     """
     
-    def __init__(self, root: str, transforms=None, train: bool=False):
+    def __init__(self, root: str, transforms=None, train: bool=False, subset: slice=None, return_mask=False):
+        """
+        Parameters
+        ----------
+        subset : slice
+            Slice of data files on which to train.
+        """
         super().__init__(root, transforms=transforms)
         self.train = train
+        self.use_mask = return_mask
         self.images = sorted(glob.glob(os.path.join(root, "images/*.tif")))
         self.masks = sorted(glob.glob(os.path.join(root, "mask/*.gif")))
+        if subset is not None:
+            self.images = self.images[subset]
+            self.masks = self.masks[subset]
         self.targets = None
         if train:
             self.targets = sorted(glob.glob(os.path.join(root, "1st_manual/*.gif")))
+            if subset is not None:
+                self.targets = self.targets[subset]
+        
 
     def __len__(self):
         return len(self.images)
@@ -35,23 +48,34 @@ class DriveDataset(VisionDataset):
         mask_path = self.masks[index]
         img = cv2.cvtColor(cv2.imread(img_path), cv2.COLOR_BGR2RGB)
         mask = np.asarray(Image.open(mask_path))
-
         if self.train:
             tgt_path = self.targets[index]
-            target = Image.open(tgt_path)
-            target = np.asarray(target)
+            target = np.asarray(Image.open(tgt_path))
             if self.transforms is not None:
                 augmented = self.transforms(image=img, masks=[mask, target])
                 img = augmented['image']
                 mask, target = augmented['masks']
-                img[mask == 1] = 0
-            return img, target
+                mask_zeros = mask == 0
+                if isinstance(img, np.ndarray):
+                    img[mask_zeros] = 0
+                else:
+                    img[:, mask_zeros] = 0
+                target = target.astype(int) / 255
+            if self.use_mask:
+                return img, torch.from_numpy(mask).long(), torch.from_numpy(target).long()
+            return img, torch.from_numpy(target).long()
         else:
             if self.transforms is not None:
                 augmented = self.transforms(image=img, mask=mask)
                 img = augmented['image']
                 mask = augmented['mask']
-                img[mask == 1] = 0
+                mask_zeros = mask == 0
+                if isinstance(np.ndarray, img):
+                    img[mask_zeros] = 0
+                else:
+                    img[:, mask_zeros] = 0
+            if self.use_mask:
+                return img, torch.from_numpy(mask).long()
             return img
 
 
