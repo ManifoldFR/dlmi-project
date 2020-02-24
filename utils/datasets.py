@@ -55,11 +55,11 @@ class DriveDataset(VisionDataset):
                 augmented = self.transforms(image=img, masks=[mask, target])
                 img = augmented['image']
                 mask, target = augmented['masks']
-                mask_zeros = mask == 0
-                if isinstance(img, np.ndarray):
-                    img[mask_zeros] = 0
-                else:
-                    img[:, mask_zeros] = 0
+                # mask_zeros = mask == 0
+                # if isinstance(img, np.ndarray):
+                #     img[mask_zeros] = 0
+                # else:
+                #     img[:, mask_zeros] = 0
                 target = target.astype(int) / 255
             if self.use_mask:
                 return img, torch.from_numpy(mask).long(), torch.from_numpy(target).long()
@@ -69,11 +69,11 @@ class DriveDataset(VisionDataset):
                 augmented = self.transforms(image=img, mask=mask)
                 img = augmented['image']
                 mask = augmented['mask']
-                mask_zeros = mask == 0
-                if isinstance(np.ndarray, img):
-                    img[mask_zeros] = 0
-                else:
-                    img[:, mask_zeros] = 0
+                # mask_zeros = mask == 0
+                # if isinstance(np.ndarray, img):
+                #     img[mask_zeros] = 0
+                # else:
+                #     img[:, mask_zeros] = 0
             if self.use_mask:
                 return img, torch.from_numpy(mask).long()
             return img

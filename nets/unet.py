@@ -5,7 +5,7 @@ from torch import nn, Tensor
 class ConvBlock(nn.Module):
     """Basic convolutional block."""
 
-    def __init__(self, in_channels, out_channels, norm='batch', num_groups=4):
+    def __init__(self, in_channels, out_channels, norm='batch'):
         super().__init__()
         # choice of padding=1 keeps
         # feature map dimensions identical
@@ -13,9 +13,12 @@ class ConvBlock(nn.Module):
         if norm == 'batch':
             self.bn = nn.BatchNorm2d(out_channels)
         elif norm == 'group':
+            num_groups = out_channels // 8
             self.bn = nn.GroupNorm(num_groups, out_channels)
         elif norm is None:
             self.bn = nn.Identity()
+        else:
+            raise TypeError("Wrong type of normalization layer provided for ConvBlock")
         self.activation = nn.ReLU()
 
     def forward(self, x: Tensor):
@@ -90,7 +93,7 @@ class UNet(nn.Module):
     See https://arxiv.org/pdf/1505.04597.pdf 
     """
 
-    def __init__(self, num_channels: int = 3, num_classes: int = 2):
+    def __init__(self, num_channels: int=3, num_classes: int=2):
         """Initialize a U-Net.
         
         Parameters
@@ -125,7 +128,6 @@ class UNet(nn.Module):
             ConvBlock(64, 64),
             nn.Conv2d(64, num_classes, kernel_size=1, padding=0)
         )
-        self.activation = nn.Softmax(dim=0)
 
     def forward(self, x: Tensor):
         x1 = self.in_conv(x)  # 64 * 1. * 1. ie 224
@@ -196,7 +198,7 @@ class AttentionUNet(nn.Module):
     and original implementation at https://github.com/ozan-oktay/Attention-Gated-Networks.
     """
 
-    def __init__(self, num_channels: int, num_classes: int = 2):
+    def __init__(self, num_channels: int=3, num_classes: int=2):
         """
         
         Parameters
@@ -237,8 +239,6 @@ class AttentionUNet(nn.Module):
             ConvBlock(64, 64),
             nn.Conv2d(64, num_classes, kernel_size=1, padding=0)
         )
-
-        self.activation = nn.Softmax(dim=0)
 
     def forward(self, x: Tensor):
         x1 = self.in_conv(x)  # 64 * 1. * 1.
