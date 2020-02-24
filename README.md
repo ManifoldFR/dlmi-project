@@ -24,6 +24,7 @@ data/drive
     - training
     - test
 ```
+Its mean is `[0.5078, 0.2682, 0.1613]`, stdev is `[0.3378, 0.1753, 0.0978]`
 
 We also use the STARE dataset with manual vessel annotations: http://cecas.clemson.edu/~ahoover/stare/probing/index.html.
 ```bash
@@ -39,6 +40,12 @@ data/stare/
         - labels_vk
         - results_hoover
 ```
+
+CHASE dataset:
+```
+data/chase
+```
+The 1st manual annotation set is `*_1stHO.png`, the second manual annotations are `*_2ndHO.png`.
 
 
 Test that the dataset and data augmentation works:
