@@ -24,8 +24,24 @@ def iou_pytorch(outputs: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
     return iou
 
 
+def dice_score(input: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
+    """Dice score metric."""
+    # You can comment out this line if you are passing tensors of equal shape
+    # But if you are passing output from UNet or something it will most probably
+    # be with the BATCH x 1 x H x W shape
+    input = input.squeeze(1)  # BATCH x 1 x H x W => BATCH x H x W
+    dims = (1, 2)  # dimensions to sum over
+    # Count zero whenever either prediction or truth = 0
+    intersection = (input.float() * labels.float()).sum(dims)
+    im_sum = (input + labels).float().sum()
+
+    # We smooth our devision to avoid 0/0
+    dice = 2 * intersection / (im_sum + EPSILON)
+    return dice
+
+
 def soft_dice_loss(input: torch.Tensor, labels: torch.Tensor, softmax=True) -> torch.Tensor:
-    """Mean soft dice loss over the batch.
+    """Mean soft dice loss over the batch. From Milletari et al. (2016) https://arxiv.org/pdf/1606.04797.pdf 
     
     Parameters
     ----------
@@ -41,16 +57,24 @@ def soft_dice_loss(input: torch.Tensor, labels: torch.Tensor, softmax=True) -> t
     if softmax:
         input = F.softmax(input, dim=1)
     intersect = torch.sum(input * labels, dim=dims)
-    cardinal = torch.sum(input + labels, dim=dims)
-    ratio = intersect / (cardinal + EPSILON)
+    denominator = torch.sum(input**2 + labels**2, dim=dims)
+    ratio = intersect / (denominator + EPSILON)
     return torch.mean(1 - 2. * ratio)
 
 
-def combined_loss(input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
-    """CE + Dice"""
-    return F.cross_entropy(input, target, reduction="mean") + soft_dice_loss(input, target)
+class CombinedLoss(nn.Module):
+    """Combined cross-entropy + soft-dice loss."""
+    
+    def __init__(self, weight: torch.Tensor=None):
+        super().__init__()
+        self.weight = weight
+
+    def __call__(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        """CE + Dice"""
+        return F.cross_entropy(input, target, reduction="mean", weight=self.weight) \
+            + soft_dice_loss(input, target)
 
 
 def soft_iou_loss(input: torch.Tensor, target: torch.Tensor):
     """https://arxiv.org/pdf/1705.08790.pdf"""
-    pass
+    raise NotImplementedError("IoU loss not implemented")
