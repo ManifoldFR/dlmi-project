@@ -17,6 +17,8 @@ def test_unet():
     pred_mask = net(img)
     print(pred_mask.shape)
     
+    import ipdb; ipdb.set_trace()
+    
     import matplotlib.pyplot as plt
     
     img = np.moveaxis(img.numpy()[0], 0, -1)

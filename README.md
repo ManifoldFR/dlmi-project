@@ -15,6 +15,13 @@ We use PyTorch's TensorBoard integration to see metrics and some segmentation re
 tensorboard --logdir runs/
 ```
 
+## Training
+
+To launch the training script:
+```bash
+python train.py --model attunet --loss combined --lr 0.001 -E 80
+```
+
 
 ## Data
 

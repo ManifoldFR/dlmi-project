@@ -107,7 +107,10 @@ class UNet(nn.Module):
         self.num_channels = num_channels
         self.num_classes = num_classes
 
-        self.in_conv = ConvBlock(num_channels, 64)
+        self.in_conv = nn.Sequential(
+            ConvBlock(num_channels, 64),
+            ConvBlock(64, 64)
+        )
 
         self.down1 = _DownBlock(64, 128)
         self.down2 = _DownBlock(128, 256)
@@ -181,14 +184,14 @@ class AttentionGate(nn.Module):
         x
             Skip connection weight.
         """
-        img_shape = x.shape[-2:]
         g = self.gate_bn(self.gate_conv(g))
-        x = self.feat_bn(self.feat_conv(x))
-        z = g + x
+        xp = self.feat_bn(self.feat_conv(x))
+        z = g + xp
         z = torch.relu(z)
         z = self.alpha_conv(z)
         alpha = self.alpha_activ(z)
-        return alpha
+        xhat = xp * alpha
+        return xhat
 
 
 class AttentionUNet(nn.Module):
@@ -214,7 +217,10 @@ class AttentionUNet(nn.Module):
         self.num_channels = num_channels
         self.num_classes = num_classes
 
-        self.in_conv = ConvBlock(num_channels, 64)
+        self.in_conv = nn.Sequential(
+            ConvBlock(num_channels, 64),
+            ConvBlock(64, 64)
+        )
 
         self.down1 = _DownBlock(64, 128)
         self.down2 = _DownBlock(128, 256)
@@ -246,13 +252,13 @@ class AttentionUNet(nn.Module):
         x3 = self.down2(x2)  # 256 * 1/4 * 1/4
         x4 = self.down3(x3)  # 512 * 1/8 * 1/8
         x = self.center(x4)  # 512 * 1/8 * 1/8
-        alp1 = self.att1(x4, x4)
-        x = self.up1(x, alp1 * x4)  # 256 * 1/4 * 1/4
+        alp1 = self.att1(x, x4)
+        x = self.up1(x, alp1)  # 256 * 1/4 * 1/4
         alp2 = self.att2(x, x3)
-        x = self.up2(x, alp2 * x3)  # 128 * 1/2 * 1/2
+        x = self.up2(x, alp2)  # 128 * 1/2 * 1/2
         alp3 = self.att3(x, x2)
-        x = self.up3(x, alp3 * x2)
+        x = self.up3(x, alp3)
         alp4 = self.att4(x, x1)
-        z = torch.cat((alp4 * x1, x), dim=1)
+        z = torch.cat((alp4, x), dim=1)
         out = self.out_conv(z)
         return out

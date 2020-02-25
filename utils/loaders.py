@@ -11,19 +11,21 @@ from albumentations.pytorch import ToTensorV2 as ToTensor
 
 ## Define the data augmentation pipeline
 
+SIZE = 448
+
 def make_train_transform(mean=0, std=1):
     transform_list = [
         Rotate(30, p=.7, border_mode=cv2.BORDER_CONSTANT),
         OneOf([
-            RandomResizedCrop(448, 448, scale=(0.4, 1.0), p=.3),
-            Resize(448, 448, p=.7),
+            RandomResizedCrop(SIZE, SIZE, scale=(0.35, 1.0), p=.3),
+            Resize(SIZE, SIZE, p=.7),
         ], p=1),
         OneOf([
             HorizontalFlip(),
             VerticalFlip()
         ], p=0.5),
-        CLAHE(),
-        GaussianBlur(blur_limit=10, p=.3),
+        CLAHE(always_apply=True),
+        GaussianBlur(blur_limit=4, p=.3),
         Normalize(mean, std, always_apply=True),
         ToTensor(always_apply=True)
     ]
@@ -38,7 +40,8 @@ train_transform = make_train_transform(
     std=[0.3378, 0.1753, 0.0978])
 
 val_transform = Compose([
-    Resize(448, 448),
+    Resize(SIZE, SIZE),
+    CLAHE(always_apply=True),
     Normalize(mean=[0.5078, 0.2682, 0.1613],
               std=[0.3378, 0.1753, 0.0978]),
     ToTensor(),
