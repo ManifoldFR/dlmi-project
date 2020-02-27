@@ -46,13 +46,15 @@ def GeneralizedDiceLoss(y_pred,y_true):
     return 1-(2*(num/denom))
     
 # test
-x = Variable(torch.randn((10,10,3)).float(),requires_grad=True)
-target = torch.randint(0,2,(10,10,3)).float()
+x = Variable(torch.randn((10, 10, 3)).float(), requires_grad=True)
+target = torch.randint(0, 2, (10, 10, 3)).float()
 output = sig(x)
 loss=GeneralizedDiceLoss(output,target) 
 loss.backward()
 print(model.weight.grad)
 
+x = Variable(torch.randn((10, 10, 3)).float(), requires_grad=True)
+output = sig(x)
 loss=FocalLoss(output,target) 
 loss.backward()
 print(model.weight.grad)
