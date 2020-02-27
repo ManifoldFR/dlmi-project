@@ -8,10 +8,7 @@ import numpy as np
 
 def FocalLoss(y_pred,y_true, gamma=2, alpha=1):
     y_true=y_true.detach()
-#    bce_loss = F.binary_cross_entropy(input=y_pred.squeeze(),  target=targets.float())
     bce_loss = F.binary_cross_entropy(y_pred, y_true.float())
-    print(bce_loss)
-#    bce_loss = F.binary_cross_entropy(inputs,  targets)
     loss =alpha * (1 - torch.exp(-bce_loss)) ** gamma * bce_loss
     return loss
     
@@ -53,7 +50,10 @@ x = Variable(torch.randn((10,10,3)).float(),requires_grad=True)
 target = torch.randint(0,2,(10,10,3)).float()
 output = sig(x)
 loss=GeneralizedDiceLoss(output,target) 
+loss.backward()
+print(model.weight.grad)
 
+loss=FocalLoss(output,target) 
 loss.backward()
 print(model.weight.grad)
 
