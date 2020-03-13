@@ -19,6 +19,10 @@
 *.tiff
 *.gif
 *.gz
+*.ini
+
+*.RDS
+*.Rhistory
 
 # saved models
 *.pth
