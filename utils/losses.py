@@ -58,7 +58,7 @@ def soft_dice_loss(input: torch.Tensor, labels: torch.Tensor, softmax=True) -> t
         input = F.softmax(input, dim=1)
     intersect = torch.sum(input * labels, dim=dims)
     denominator = torch.sum(input**2 + labels**2, dim=dims)
-    ratio = intersect / (denominator + EPSILON)
+    ratio = (intersect + EPSILON) / (denominator + EPSILON)
     return torch.mean(1 - 2. * ratio)
 
 
@@ -78,3 +78,61 @@ class CombinedLoss(nn.Module):
 def soft_iou_loss(input: torch.Tensor, target: torch.Tensor):
     """https://arxiv.org/pdf/1705.08790.pdf"""
     raise NotImplementedError("IoU loss not implemented")
+
+
+def focal_loss(y_pred, y_true, gamma=2, alpha=1):
+    y_true = y_true.detach()
+    bce_loss = F.binary_cross_entropy(y_pred, y_true.float())
+    loss = alpha * (1 - torch.exp(-bce_loss)) ** gamma * bce_loss
+    return loss
+
+
+def generalized_dice_loss(y_pred, y_true):
+    Nb_img = y_pred.shape[-1]
+    r = torch.zeros((Nb_img, 2))
+    for l in range(Nb_img):
+        r[l, 0] = torch.sum(y_true[:, :, l] == 0)
+    for l in range(Nb_img):
+        r[l, 1] = torch.sum(y_true[:, :, l] == 1)
+    p = torch.zeros((Nb_img, 2))
+    for l in range(Nb_img):
+        p[l, 0] = torch.sum(y_pred[:, :, l][y_true[:, :, l] > 0])
+    for l in range(Nb_img):
+        p[l, 1] = torch.sum(y_pred[:, :, l][y_true[:, :, l] < 0])
+
+    w = torch.zeros((2,))
+    w[0] = 1/(torch.sum(r[:, 0])**2)
+    w[1] = 1/(torch.sum(r[:, 1])**2)
+
+    num = (w[0]*torch.sum(r[:, 0]*p[:, 0]))+(w[1]*torch.sum(r[:, 1]*p[:, 1]))
+    denom = (w[0]*torch.sum(r[:, 0]+p[:, 0]))+(w[1]*torch.sum(r[:, 1]+p[:, 1]))
+
+    return 1-(2*(num/denom))
+
+
+if __name__ == "__main__":
+
+    # test
+    model = nn.Linear(10, 10)
+    x = torch.randn((1, 10), requires_grad=True)
+    target = torch.randint(0, 2, (10,)).float()
+    output = model(x)
+    sig = nn.Sigmoid()
+    output = sig(output)
+    loss = focal_loss(output, target)
+    loss.backward()
+    print(model.weight.grad)
+
+    # test
+    x = torch.randn((10, 10, 3), requires_grad=True)
+    target = torch.randint(0, 2, (10, 10, 3)).float()
+    output = sig(x)
+    loss = generalized_dice_loss(output, target)
+    loss.backward()
+    print(model.weight.grad)
+
+    x = torch.randn((10, 10, 3), requires_grad=True)
+    output = sig(x)
+    loss = focal_loss(output, target)
+    loss.backward()
+    print(model.weight.grad)
