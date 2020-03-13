@@ -10,14 +10,11 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
 from nets.unet import AttentionUNet, UNet
+from nets import MODEL_DICT
 from utils import losses
 from utils.plot import plot_prediction
 from utils.loaders import train_dataset, val_dataset
 
-MODEL_DICT = {
-    "unet": UNet,
-    "attunet": AttentionUNet
-}
 
 LOSSES_DICT = {
     "crossentropy": nn.CrossEntropyLoss(),
@@ -148,7 +145,7 @@ if __name__ == "__main__":
     CHECKPOINT_EVERY = 10
 
     # Define TensorBoard summary
-    comment = "DRIVE-%s-BatchNorm-%sLoss" % (args.model, args.loss)
+    comment = "DRIVE-{:s}-BatchNorm-{:s}Loss".format(args.model, args.loss)
     writer = SummaryWriter(comment=comment)
     
     # writer.add_hparams({
