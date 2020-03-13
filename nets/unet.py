@@ -201,7 +201,7 @@ class AttentionUNet(nn.Module):
     and original implementation at https://github.com/ozan-oktay/Attention-Gated-Networks.
     """
 
-    def __init__(self, num_channels: int=3, num_classes: int=2):
+    def __init__(self, num_channels: int=3, num_classes: int=2, gate_feat_dims: list = None):
         """
         
         Parameters
@@ -212,6 +212,8 @@ class AttentionUNet(nn.Module):
             No. of feature-maps in lower-level feature vector.
         int_channels : int
             No. of intermediate channels for the attention module.
+        gate_feat_dims : list
+            Number of channels for the attention gates.
         """
         super().__init__()
         self.num_channels = num_channels
@@ -231,15 +233,21 @@ class AttentionUNet(nn.Module):
             nn.ConvTranspose2d(1024, 512, 2, stride=2)  # upscale
         )
 
+        if gate_feat_dims is None:
+            self.gate_feat_dims = [256, 128, 64, 32]
+        else:
+            assert len(gate_feat_dims) == 4
+            self.gate_feat_dims = gate_feat_dims
+
         # reminder: convolves then upsamples
-        self.att1 = AttentionGate(512, 512, 128)
+        self.att1 = AttentionGate(512, 512, gate_feat_dims[0])
         self.up1 = _UpBlock(512, 256)
-        self.att2 = AttentionGate(256, 256, 64)
+        self.att2 = AttentionGate(256, 256, gate_feat_dims[1])
         self.up2 = _UpBlock(256, 128)
-        self.att3 = AttentionGate(128, 128, 32)
+        self.att3 = AttentionGate(128, 128, gate_feat_dims[2])
         self.up3 = _UpBlock(128, 64)
 
-        self.att4 = AttentionGate(64, 64, 16)
+        self.att4 = AttentionGate(64, 64, gate_feat_dims[3])
         self.out_conv = nn.Sequential(
             ConvBlock(128, 64),
             ConvBlock(64, 64),
