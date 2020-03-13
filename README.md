@@ -54,6 +54,15 @@ data/chase
 ```
 The 1st manual annotation set is `*_1stHO.png`, the second manual annotations are `*_2ndHO.png`.
 
+ARIA data is located in
+```
+data/aria
+    - images
+    - annotation 1
+    - annotation 2
+    -(markupdiscfovea) 
+```
+The database contains healthy subjects (61 images, "_c_" suffix), diabetic patients (59 images, "_d_" suffix), and patients with age-related macular degeneration (23 images, "_a_" suffix).
 
 Test that the dataset and data augmentation works:
 ```bash
