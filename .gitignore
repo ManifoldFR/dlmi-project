@@ -22,6 +22,7 @@
 *.ini
 
 *.RDS
+*.Rhistory
 
 # saved models
 *.pth
