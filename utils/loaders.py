@@ -11,21 +11,19 @@ from albumentations.pytorch import ToTensorV2 as ToTensor
 
 ## Define the data augmentation pipeline
 
-SIZE = 448
+SIZE = 384
 
 def make_train_transform(mean=0, std=1):
     transform_list = [
-        Rotate(30, p=.7, border_mode=cv2.BORDER_CONSTANT),
+        Rotate(45, p=.7, border_mode=cv2.BORDER_CONSTANT),
+        HorizontalFlip(),
+        VerticalFlip(),
         OneOf([
-            RandomResizedCrop(SIZE, SIZE, scale=(0.35, 1.0), p=.3),
-            Resize(SIZE, SIZE, p=.7),
+            RandomResizedCrop(SIZE, SIZE, scale=(0.35, 1.0), p=.35),
+            Resize(SIZE, SIZE, p=.65),
         ], p=1),
-        OneOf([
-            HorizontalFlip(),
-            VerticalFlip()
-        ], p=0.5),
         CLAHE(always_apply=True),
-        GaussianBlur(blur_limit=4, p=.3),
+        GaussianBlur(blur_limit=3, p=.2),
         Normalize(mean, std, always_apply=True),
         ToTensor(always_apply=True)
     ]
