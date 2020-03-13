@@ -1,16 +1,18 @@
+import argparse
 import os
-import tqdm
+
 import numpy as np
 import torch
-from torch import nn
 import torch.nn.functional as F
+import tqdm
+from torch import nn
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
-from utils import losses
-from utils.loaders import train_dataset, val_dataset, denormalize
-from nets.unet import UNet, AttentionUNet
 
-import argparse
+from nets.unet import AttentionUNet, UNet
+from utils import losses
+from utils.plot import plot_prediction
+from utils.loaders import train_dataset, val_dataset
 
 MODEL_DICT = {
     "unet": UNet,
@@ -73,7 +75,7 @@ def train(model, loader: torch.utils.data.DataLoader, criterion, metric, optimiz
         transformer = loader.dataset.transforms  # assumption: dataset has transforms attr
         mean = transformer[-2].mean  # assume second-to-last transformer is Normalizer
         std = transformer[-2].std
-        fig = plot_prediction(img[0], output[0], target[0], mean, std)
+        fig = plot_prediction(img, output, target, mean, std)
         writer.add_figure("Train/Prediction",  fig, epoch)
     mean_loss = np.mean(all_loss)
     return mean_loss, {key: np.mean(a) for key, a in all_acc.items()}
@@ -99,33 +101,17 @@ def validate(model, loader, criterion, metric):
             for key in metric:
                 acc = metric[key](pred, target)
                 all_acc[key].append(acc.item())
-
+        if writer is not None:
+            # get dataset's transformer
+            # assumption: dataset has transforms attr
+            transformer = loader.dataset.transforms
+            # assume second-to-last transformer is Normalizer
+            mean = transformer[-2].mean
+            std = transformer[-2].std
+            fig = plot_prediction(img, output, target, mean, std)
+            writer.add_figure("Validation/Prediction",  fig, epoch)
+        mean_loss = np.mean(all_loss)
         return np.mean(all_loss), {key: np.mean(a) for key, a in all_acc.items()}
-
-
-def plot_prediction(img: torch.Tensor, pred_mask: torch.Tensor, target: torch.Tensor, mean, std):
-    """
-    Plot the original image, heatmap of predicted class probabilities, and target mask.
-    """
-    import matplotlib.pyplot as plt
-    from typing import Tuple
-    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(12, 5), dpi=60)
-    fig: plt.Figure
-    # put on CPU, denormalize
-    img = denormalize(img.data.cpu(), mean=mean, std=std)
-    pred_mask = F.softmax(pred_mask.data.cpu(), dim=1).numpy()
-    pred_mask = pred_mask[1]  # class 1
-    target = target.data.cpu().numpy()
-    
-    ax1.imshow(img)
-    ax1.set_title("Base image")
-    ax2.imshow(pred_mask)
-    ax2.set_title("Mask probability map")
-    ax3.imshow(target, cmap="gray")
-    ax3.set_title("Real mask")
-    
-    fig.tight_layout()
-    return fig
 
 
 if __name__ == "__main__":
@@ -159,7 +145,7 @@ if __name__ == "__main__":
     train_loader = DataLoader(train_dataset, BATCH_SIZE, shuffle=True)
     val_loader = DataLoader(val_dataset, BATCH_SIZE, shuffle=False)
     
-    CHECKPOINT_EVERY = 6
+    CHECKPOINT_EVERY = 10
 
     # Define TensorBoard summary
     comment = "DRIVE-%s-BatchNorm-%sLoss" % (args.model, args.loss)
@@ -185,7 +171,7 @@ if __name__ == "__main__":
         writer.add_scalar("Validation/IoU", val_acc["iou"], epoch)
         
         
-        if epoch > 0 and (epoch % CHECKPOINT_EVERY == 0):
+        if epoch > 0 and ((epoch+1) % CHECKPOINT_EVERY == 0):
             save_path = "models/%s_%03d.pth" % (comment, epoch)
             print("Saving checkpoint {:s} at epoch {:d}".format(save_path, epoch))
             # Save checkpoint
