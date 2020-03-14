@@ -93,11 +93,13 @@ class STAREDataset(VisionDataset):
     http://cecas.clemson.edu/~ahoover/stare/.
     
     """
-    def __init__(self, root: str, transforms=None):
-        super().__init__(root, transforms=transforms)
+    def __init__(self, root: str, transforms=None, combination_type="random"):
+        super().__init__(root, transforms=transforms, combination_type="random)
         self.images = sorted(glob.glob(os.path.join(root, "images/*.ppm")))
         # type of label used is fixed (hard coded)
         self.targets = sorted(glob.glob(os.path.join(root, "labels/labels_vk/*.ppm")))
+        self.target1 = sorted(glob.glob(os.path.join(root, "annotation 1/*.png")))
+        self.target2 = sorted(glob.glob(os.path.join(root, "annotation 2/*.png")))
 
     def __len__(self):
         return len(self.images)
@@ -106,8 +108,8 @@ class STAREDataset(VisionDataset):
         img = cv2.imread(self.images[index])
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         target = cv2.imread(self.targets[index], cv2.IMREAD_UNCHANGED)
-        t1 = None # change me
-        t2 = None
+        t1 = cv2.imread(self.target1[index], cv2.IMREAD_UNCHANGED)
+        t2 = cv2.imread(self.target2[index], cv2.IMREAD_UNCHANGED)
         target = self.combine_multiple_targets(t1, t2)
         if self.transforms is not None:
             augmented = self.transforms(image=img, mask=target)
@@ -117,4 +119,13 @@ class STAREDataset(VisionDataset):
 
     def combine_multiple_targets(self, t1, t2):
         # TODO implement strategies
-        pass
+        if combination_type == "random":
+            target=[t1,t2][np.random.randint(2)]
+
+        elif combination_type == "union":
+            target=(t1+t2>0)*1
+    
+        elif combination_type == "intersection":
+            target=((t1==1) & (t2==1))*1
+
+        return target
