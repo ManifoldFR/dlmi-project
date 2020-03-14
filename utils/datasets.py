@@ -94,7 +94,7 @@ class STAREDataset(VisionDataset):
     
     """
     def __init__(self, root: str, transforms=None, combination_type="random"):
-        super().__init__(root, transforms=transforms, combination_type="random)
+        super().__init__(root, transforms=transforms, combination_type="random")
         self.images = sorted(glob.glob(os.path.join(root, "images/*.ppm")))
         # type of label used is fixed (hard coded)
         self.targets = sorted(glob.glob(os.path.join(root, "labels/labels_vk/*.ppm")))
