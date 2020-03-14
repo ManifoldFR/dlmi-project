@@ -106,8 +106,15 @@ class STAREDataset(VisionDataset):
         img = cv2.imread(self.images[index])
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         target = cv2.imread(self.targets[index], cv2.IMREAD_UNCHANGED)
+        t1 = None # change me
+        t2 = None
+        target = self.combine_multiple_targets(t1, t2)
         if self.transforms is not None:
             augmented = self.transforms(image=img, mask=target)
             img = augmented['image']
             target = augmented['mask']
         return img, target
+
+    def combine_multiple_targets(self, t1, t2):
+        # TODO implement strategies
+        pass

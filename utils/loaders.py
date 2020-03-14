@@ -4,26 +4,27 @@ import cv2
 
 from utils.datasets import DriveDataset, STAREDataset
 
-from albumentations import Compose, Resize, RandomResizedCrop
+from albumentations import Compose, Resize, RandomSizedCrop
 from albumentations import OneOf, Rotate, GaussianBlur, CLAHE
 from albumentations import VerticalFlip, HorizontalFlip, Resize, Normalize
 from albumentations.pytorch import ToTensorV2 as ToTensor
 
 ## Define the data augmentation pipeline
 
-SIZE = 384
+SIZE = 320
+MAX_SIZE = 448
 
 def make_train_transform(mean=0, std=1):
     transform_list = [
-        Rotate(45, p=.7, border_mode=cv2.BORDER_CONSTANT),
         HorizontalFlip(),
         VerticalFlip(),
+        GaussianBlur(blur_limit=3, p=.2),
+        Rotate(45, p=.7, border_mode=cv2.BORDER_CONSTANT),
         OneOf([
-            RandomResizedCrop(SIZE, SIZE, scale=(0.35, 1.0), p=.35),
-            Resize(SIZE, SIZE, p=.65),
+            RandomSizedCrop((MAX_SIZE, MAX_SIZE), SIZE, SIZE, p=.8),
+            Resize(SIZE, SIZE, p=.2),
         ], p=1),
         CLAHE(always_apply=True),
-        GaussianBlur(blur_limit=3, p=.2),
         Normalize(mean, std, always_apply=True),
         ToTensor(always_apply=True)
     ]
@@ -33,15 +34,29 @@ def make_train_transform(mean=0, std=1):
 ## The following transforms apply to DRIVE !!
 ## Use the mean and std values recorded in the JSON file !
 # Default train transform converts to Tensor
+
+import json
+
+with open("dataset_statistics.json") as f:
+    statistics_ = json.load(f)
+
+
 train_transform = make_train_transform(
-    mean=[0.5078, 0.2682, 0.1613],
-    std=[0.3378, 0.1753, 0.0978])
+    mean=statistics_['drive']['mean'],
+    std=statistics_['drive']['mean'])
 
 val_transform = Compose([
     Resize(SIZE, SIZE),
     CLAHE(always_apply=True),
-    Normalize(mean=[0.5078, 0.2682, 0.1613],
-              std=[0.3378, 0.1753, 0.0978]),
+    Normalize(mean=statistics_['drive']['mean'],
+              std=statistics_['drive']['mean']),
+    ToTensor(),
+])
+
+test_transform = Compose([
+    CLAHE(always_apply=True),
+    Normalize(mean=statistics_['drive']['mean'],
+              std=statistics_['drive']['mean']),
     ToTensor(),
 ])
 
@@ -61,9 +76,14 @@ DRIVE_SUBSET_VAL = slice(15, 23)
 
 train_dataset = DriveDataset("data/drive/training",
                              transforms=train_transform,
+                             green_only=True,
                              train=True, subset=DRIVE_SUBSET_TRAIN)
 
 val_dataset = DriveDataset("data/drive/training",
                              transforms=val_transform,
+                             green_only=True,
                              train=True, subset=DRIVE_SUBSET_VAL)
 
+test_dataset = DriveDataset("data/drive/test",
+                            transforms=test_transform,
+                            train=False, green_only=True)
