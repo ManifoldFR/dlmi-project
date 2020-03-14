@@ -100,6 +100,7 @@ class STAREDataset(VisionDataset):
         self.targets = sorted(glob.glob(os.path.join(root, "labels/labels_vk/*.ppm")))
         self.target1 = sorted(glob.glob(os.path.join(root, "annotation 1/*.png")))
         self.target2 = sorted(glob.glob(os.path.join(root, "annotation 2/*.png")))
+        self.combination_type=combination_type
 
     def __len__(self):
         return len(self.images)
@@ -119,13 +120,13 @@ class STAREDataset(VisionDataset):
 
     def combine_multiple_targets(self, t1, t2):
         # TODO implement strategies
-        if combination_type == "random":
+        if self.combination_type == "random":
             target=[t1,t2][np.random.randint(2)]
 
-        elif combination_type == "union":
+        elif self.combination_type == "union":
             target=(t1+t2>0)*1
     
-        elif combination_type == "intersection":
+        elif self.combination_type == "intersection":
             target=((t1==1) & (t2==1))*1
 
         return target
