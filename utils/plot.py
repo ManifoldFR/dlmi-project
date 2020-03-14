@@ -21,6 +21,7 @@ def plot_prediction(img: torch.Tensor, pred_mask: torch.Tensor, target: torch.Te
     The `img` image tensor is expected to be in cv2 `(B,G,R)` format. `pred_mask` is expected to be pre-Softmax unless `apply_softmax` is True.
     """
     batch_size = img.shape[0]
+    ncol = batch_size // 4
     img = make_grid(img, 4)
     # put on CPU, denormalize
     # GREEN MODE
@@ -45,8 +46,8 @@ def plot_prediction(img: torch.Tensor, pred_mask: torch.Tensor, target: torch.Te
     pred_mask = pred_mask[1]  # class 1
     
     norm = colors.PowerNorm(0.5, vmin=0., vmax=1., clip=True)
-    splt_nums = (1, num_plots) if batch_size == 1 else (num_plots, 1)
-    fig, axes = plt.subplots(*splt_nums, figsize=(4*num_plots, 5), dpi=60)
+    splt_nums = (1, num_plots)
+    fig, axes = plt.subplots(*splt_nums, figsize=(4*num_plots+1, 5), dpi=60)
     fig: plt.Figure
     (ax1, ax2, ax3) = axes
 

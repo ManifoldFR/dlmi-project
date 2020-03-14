@@ -13,7 +13,7 @@ from nets.unet import AttentionUNet, UNet
 from nets import MODEL_DICT
 from utils import losses
 from utils.plot import plot_prediction
-from utils.loaders import train_dataset, val_dataset
+from utils.loaders import DATASET_MAP, denormalize
 
 torch.random.manual_seed(0)
 np.random.seed(0)
@@ -32,11 +32,13 @@ parser.add_argument("--model", type=str, choices=list(MODEL_DICT.keys()),
                     required=True)
 parser.add_argument("--loss", type=str, choices=list(LOSSES_DICT.keys()),
                     default="crossentropy")
+parser.add_argument("--dataset", default="DRIVE", type=str,
+                    help="Specify the dataset.")
+parser.add_argument("--validate-every", "-ve", default=4, type=int,
+                    help="Validate every X epochs (default %(default)d)")
 parser.add_argument("--epochs", "-E", default=40, type=int)
 parser.add_argument("--batch-size", "-B", default=1, type=int)
 parser.add_argument("--lr", "-lr", default=2e-5, type=float)
-parser.add_argument("--validate-every", "-ve", default=2, type=int,
-                    help="Validate every X epochs (default %(default)d)")
 
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -91,6 +93,9 @@ def validate(model, loader, criterion, metric):
         all_acc = dict()
         for key in metric:
             all_acc[key] = []
+        imgs_ = []
+        targets_ = []
+        outputs_ = []
         for idx, (img, target) in enumerate(loader):
             img = img.to(device)
             # print(target.shape)
@@ -105,6 +110,14 @@ def validate(model, loader, criterion, metric):
             for key in metric:
                 acc = metric[key](pred, target)
                 all_acc[key].append(acc.item())
+            # Store the img, target, prediction for plotting
+            imgs_.append(img)
+            targets_.append(target)
+            outputs_.append(output)
+        imgs_ = torch.cat(imgs_)
+        targets_ = torch.cat(targets_)
+        outputs_ = torch.cat(outputs_)
+        
         if writer is not None:
             # get dataset's transformer
             # assumption: dataset has transforms attr
@@ -112,7 +125,7 @@ def validate(model, loader, criterion, metric):
             # assume second-to-last transformer is Normalizer
             mean = transformer[-2].mean
             std = transformer[-2].std
-            fig = plot_prediction(img, output, target, mean, std)
+            fig = plot_prediction(imgs_, outputs_, targets_, mean, std)
             writer.add_figure("Validation/Prediction",  fig, epoch)
         mean_loss = np.mean(all_loss)
         return np.mean(all_loss), {key: np.mean(a) for key, a in all_acc.items()}
@@ -143,10 +156,14 @@ if __name__ == "__main__":
         "dice": losses.dice_score,
         "iou": losses.iou_pytorch
     }
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=6, gamma=0.8)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.8)
 
+    # Define dataset
+    DATASET = args.dataset
+    train_dataset = DATASET_MAP[DATASET]['train']
+    val_dataset = DATASET_MAP[DATASET]['val']
+    
     # Define TensorBoard summary
-    DATASET = "DRIVE"
     comment = "{:s}-{:s}-BatchNorm-{:s}Loss".format(
         DATASET, args.model, args.loss)
     writer = SummaryWriter(comment=comment)

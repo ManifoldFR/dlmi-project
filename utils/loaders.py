@@ -31,7 +31,6 @@ def make_train_transform(mean=0, std=1):
     return Compose(transform_list)
 
 
-## The following transforms apply to DRIVE !!
 ## Use the mean and std values recorded in the JSON file !
 # Default train transform converts to Tensor
 
@@ -42,21 +41,21 @@ with open("dataset_statistics.json") as f:
 
 
 train_transform = make_train_transform(
-    mean=statistics_['drive']['mean'],
-    std=statistics_['drive']['mean'])
+    mean=statistics_['DRIVE']['mean'],
+    std=statistics_['DRIVE']['std'])
 
 val_transform = Compose([
     Resize(SIZE, SIZE),
     CLAHE(always_apply=True),
-    Normalize(mean=statistics_['drive']['mean'],
-              std=statistics_['drive']['mean']),
+    Normalize(mean=statistics_['DRIVE']['mean'],
+              std=statistics_['DRIVE']['std']),
     ToTensor(),
 ])
 
 test_transform = Compose([
     CLAHE(always_apply=True),
-    Normalize(mean=statistics_['drive']['mean'],
-              std=statistics_['drive']['mean']),
+    Normalize(mean=statistics_['DRIVE']['mean'],
+              std=statistics_['DRIVE']['std']),
     ToTensor(),
 ])
 
@@ -74,16 +73,20 @@ def denormalize(image: torch.Tensor, normalizer=None, mean=0, std=1):
 DRIVE_SUBSET_TRAIN = slice(0, 15)
 DRIVE_SUBSET_VAL = slice(15, 23)
 
-train_dataset = DriveDataset("data/drive/training",
-                             transforms=train_transform,
-                             green_only=True,
-                             train=True, subset=DRIVE_SUBSET_TRAIN)
 
-val_dataset = DriveDataset("data/drive/training",
-                             transforms=val_transform,
-                             green_only=True,
-                             train=True, subset=DRIVE_SUBSET_VAL)
-
-test_dataset = DriveDataset("data/drive/test",
-                            transforms=test_transform,
-                            train=False, green_only=True)
+DATASET_MAP = {
+    "DRIVE": {
+        "train": DriveDataset("data/drive/training", transforms=train_transform, 
+                              green_only=True, train=True, subset=DRIVE_SUBSET_TRAIN),
+        "val": DriveDataset("data/drive/training", transforms=val_transform,
+                            green_only=True, train=True, subset=DRIVE_SUBSET_VAL),
+        "test": DriveDataset("data/drive/test", transforms=test_transform,
+                             green_only=True, train=False)
+    },
+    "STARE": {
+        "train": STAREDataset("data/stare", transforms=train_transform,
+                              combination_type="random", subset=slice(0, 15)),
+        "val": STAREDataset("data/stare", transforms=train_transform,
+                              combination_type="random", subset=slice(15, 21))
+    }
+}

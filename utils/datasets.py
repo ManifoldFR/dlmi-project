@@ -93,14 +93,16 @@ class STAREDataset(VisionDataset):
     http://cecas.clemson.edu/~ahoover/stare/.
     
     """
-    def __init__(self, root: str, transforms=None, combination_type="random"):
-        super().__init__(root, transforms=transforms, combination_type="random")
+    def __init__(self, root: str, transforms=None, combination_type="random", subset=None):
+        super().__init__(root, transforms=transforms)
         self.images = sorted(glob.glob(os.path.join(root, "images/*.ppm")))
-        # type of label used is fixed (hard coded)
-        self.targets = sorted(glob.glob(os.path.join(root, "labels/labels_vk/*.ppm")))
         self.target1 = sorted(glob.glob(os.path.join(root, "annotation 1/*.png")))
         self.target2 = sorted(glob.glob(os.path.join(root, "annotation 2/*.png")))
-        self.combination_type=combination_type
+        if subset is not None:
+            self.images = self.images[subset]
+            self.target1 = self.target1[subset]
+            self.target2 = self.target2[subset]
+        self.combination_type = combination_type
 
     def __len__(self):
         return len(self.images)
@@ -108,7 +110,6 @@ class STAREDataset(VisionDataset):
     def __getitem__(self, index):
         img = cv2.imread(self.images[index])
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        target = cv2.imread(self.targets[index], cv2.IMREAD_UNCHANGED)
         t1 = cv2.imread(self.target1[index], cv2.IMREAD_UNCHANGED)
         t2 = cv2.imread(self.target2[index], cv2.IMREAD_UNCHANGED)
         target = self.combine_multiple_targets(t1, t2)
