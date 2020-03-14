@@ -3,14 +3,15 @@ from torch.utils.data import ConcatDataset, DataLoader
 from utils.datasets import DriveDataset
 
 
-train_dataset = DriveDataset("data/drive/training")
-test_dataset = DriveDataset("data/drive/test")
+DRIVE_SUBSET_TRAIN = slice(0, 15)
+train_dataset = DriveDataset("data/drive/training", subset=DRIVE_SUBSET_TRAIN)
 
-full_dataset = ConcatDataset([train_dataset, test_dataset])
 
-print(len(full_dataset))
+print(len(train_dataset))
 
-loader = DataLoader(full_dataset, batch_size=8, num_workers=1)
+
+
+loader = DataLoader(train_dataset, batch_size=8, num_workers=1)
 
 mean = 0.
 std = 0.
@@ -27,3 +28,18 @@ std /= len(loader.dataset)
 
 print(mean)
 print(std)
+
+import json
+
+with open("dataset_statistics.json", "w+") as f:
+    try:
+        stats_ = json.load(f)
+    except json.JSONDecodeError:
+        stats_ = {}
+
+    stats_['drive'] = {
+        'mean': mean.tolist(),
+        'std': std.tolist()
+    }
+    print(stats_)
+    json.dump(stats_, f, indent=4)

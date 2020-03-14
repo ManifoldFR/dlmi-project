@@ -14,11 +14,17 @@ class DriveDataset(VisionDataset):
     We handle the mask/segmentation mask using the albumentations API, inspired by
     https://github.com/choosehappy/PytorchDigitalPathology/blob/master/segmentation_epistroma_unet/train_unet_albumentations.py
     
-    Args:
-        transforms: applies to both image, mask and target segmentation mask (when available).
+    Parameters
+    ----------
+    transforms
+        Applies to both image, mask and target segmentation mask (when available).
+    subset : slice
+        Subset of indices of the dataset we want to use.
+    green_only : bool
+        Only use the green channel (idx 1).
     """
     
-    def __init__(self, root: str, transforms=None, train: bool=False, subset: slice=None, return_mask=False):
+    def __init__(self, root: str, transforms=None, train: bool=False, subset: slice=None, return_mask=False, green_only=False):
         """
         Parameters
         ----------
@@ -28,6 +34,7 @@ class DriveDataset(VisionDataset):
         super().__init__(root, transforms=transforms)
         self.train = train
         self.use_mask = return_mask
+        self.green_only = green_only
         self.images = sorted(glob.glob(os.path.join(root, "images/*.tif")))
         self.masks = sorted(glob.glob(os.path.join(root, "mask/*.gif")))
         if subset is not None:
@@ -54,12 +61,13 @@ class DriveDataset(VisionDataset):
             if self.transforms is not None:
                 augmented = self.transforms(image=img, masks=[mask, target])
                 img = augmented['image']
+                if self.green_only:
+                    img = img[[1]]
                 mask, target = augmented['masks']
-                # mask_zeros = mask == 0
                 # if isinstance(img, np.ndarray):
-                #     img[mask_zeros] = 0
+                #     img[mask == 0] = 0
                 # else:
-                #     img[:, mask_zeros] = 0
+                #     img[:, mask == 0] = 0
                 target = target.astype(int) / 255
             if self.use_mask:
                 return img, torch.from_numpy(mask).long(), torch.from_numpy(target).long()
@@ -68,12 +76,13 @@ class DriveDataset(VisionDataset):
             if self.transforms is not None:
                 augmented = self.transforms(image=img, mask=mask)
                 img = augmented['image']
+                if self.green_only:
+                    img = img[[1]]
                 mask = augmented['mask']
-                # mask_zeros = mask == 0
                 # if isinstance(np.ndarray, img):
-                #     img[mask_zeros] = 0
+                #     img[mask == 0] = 0
                 # else:
-                #     img[:, mask_zeros] = 0
+                #     img[:, mask == 0] = 0
             if self.use_mask:
                 return img, torch.from_numpy(mask).long()
             return img

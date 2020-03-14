@@ -40,30 +40,32 @@ def dice_score(input: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
     return dice
 
 
-def soft_dice_loss(input: torch.Tensor, labels: torch.Tensor, softmax=True) -> torch.Tensor:
+def soft_dice_loss(input: torch.Tensor, target: torch.Tensor, softmax=True) -> torch.Tensor:
     """Mean soft dice loss over the batch. From Milletari et al. (2016) https://arxiv.org/pdf/1606.04797.pdf 
     
     Parameters
     ----------
     input : Tensor
         (N,C,H,W) Predicted classes for each pixel.
-    labels : LongTensor
-        (N,C,H,W) Tensor of pixel labels.
+    target : LongTensor
+        (N,K,H,W) Tensor of pixel labels where `K` is the no. of classes.
     softmax : bool
         Whether to apply `F.softmax` to input to get class probabilities.
     """
-    labels = F.one_hot(labels).permute(0, 3, 1, 2)
+    target = F.one_hot(target).permute(0, 3, 1, 2)
     dims = (1, 2, 3)  # sum over C, H, W
     if softmax:
         input = F.softmax(input, dim=1)
-    intersect = torch.sum(input * labels, dim=dims)
-    denominator = torch.sum(input**2 + labels**2, dim=dims)
+    intersect = torch.sum(input * target, dim=dims)
+    denominator = torch.sum(input**2 + target**2, dim=dims)
     ratio = (intersect + EPSILON) / (denominator + EPSILON)
     return torch.mean(1 - 2. * ratio)
 
 
 class CombinedLoss(nn.Module):
-    """Combined cross-entropy + soft-dice loss."""
+    """Combined cross-entropy + soft-dice loss
+    
+    See nn-UNet paper: https://arxiv.org/pdf/1809.10486.pdf"""
     
     def __init__(self, weight: torch.Tensor=None):
         super().__init__()
@@ -79,10 +81,36 @@ def soft_iou_loss(input: torch.Tensor, target: torch.Tensor):
     """https://arxiv.org/pdf/1705.08790.pdf"""
     raise NotImplementedError("IoU loss not implemented")
 
+def tanimoto_loss(input: torch.Tensor, target: torch.Tensor, softmax=True):
+    """Tanimoto loss. 
+    
+    See eq. 3 of ResU-Net paper: https://arxiv.org/pdf/1904.00592.pdf
+    """
+    target = F.one_hot(target).permute(0, 3, 1, 2)
+    dims = (1, 2, 3)  # sum over C, H, W
+    if softmax:
+        input = F.softmax(input, dim=1)
+    intersect = torch.sum(input * target, dim=dims)
+    denominator = torch.sum(input**2 + target**2, dim=dims)
+    ratio = (intersect + EPSILON) / (denominator - intersect + EPSILON)
+    return 1. - ratio
 
-def focal_loss(y_pred, y_true, gamma=2, alpha=1):
-    y_true = y_true.detach()
-    bce_loss = F.binary_cross_entropy(y_pred, y_true.float())
+
+def tanimoto_complement_loss(input: torch.Tensor, target: torch.Tensor, softmax=True):
+    """Tanimoto loss with complement. 
+    
+    See eq. 3 of ResU-Net paper: https://arxiv.org/pdf/1904.00592.pdf
+    """
+    if softmax:
+        input = F.softmax(input, dim=1)
+    t_ = tanimoto_loss(input, target, False)
+    t_c = tanimoto_complement_loss(input, target, False)
+    return 5 * (t_ + t_c)
+
+
+def focal_loss(input: torch.Tensor, target: torch.Tensor, gamma=2, alpha=1):
+    target = target.detach()
+    bce_loss = F.binary_cross_entropy(input, target.float())
     loss = alpha * (1 - torch.exp(-bce_loss)) ** gamma * bce_loss
     return loss
 

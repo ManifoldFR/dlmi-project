@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import numpy as np
 from .loaders import denormalize
 
+from torch.utils.tensorboard import SummaryWriter
 from torchvision.utils import make_grid
 
 import matplotlib.pyplot as plt
@@ -22,34 +23,44 @@ def plot_prediction(img: torch.Tensor, pred_mask: torch.Tensor, target: torch.Te
     batch_size = img.shape[0]
     img = make_grid(img, 4)
     # put on CPU, denormalize
+    # GREEN MODE
+    mean = mean[1]
+    std = std[1]
     img = denormalize(img.data.cpu(), mean=mean, std=std)
-    if apply_softmax:
-        pred_mask = F.softmax(pred_mask, dim=1)  # actually apply Softmax
-    pred_mask = make_grid(pred_mask, 4)
     if target is not None:
         num_plots = 3
-        target = make_grid(target, 4)
         if target.ndim == 3:
             # put in format (B, C, H, W) i.e. add the channel dimension
             target = target.unsqueeze(1)
         target = make_grid(target, 4)
-        target = target.detach().cpu().numpy()  # collapse useless dimension
+        target = target.detach().cpu().numpy()
+        # collapse useless dimension
+        target = target[0]
     else:
         num_plots = 2
-    pred_mask = F.softmax(pred_mask.data.cpu(), dim=1).numpy()
+    
+    if apply_softmax:
+        pred_mask = F.softmax(pred_mask.data.cpu(), dim=1)
+    pred_mask = make_grid(pred_mask, 4).numpy()
     pred_mask = pred_mask[1]  # class 1
     
     norm = colors.PowerNorm(0.5, vmin=0., vmax=1., clip=True)
-    fig, (ax1, ax2, ax3) = plt.subplots(1, num_plots,
-                                        figsize=(4*num_plots, 5), dpi=60)
+    splt_nums = (1, num_plots) if batch_size == 1 else (num_plots, 1)
+    fig, axes = plt.subplots(*splt_nums, figsize=(4*num_plots, 5), dpi=60)
     fig: plt.Figure
+    (ax1, ax2, ax3) = axes
 
     ax1.imshow(img)
     ax1.set_title("Base image")
+    ax1.axis('off')
+    
     ax2.imshow(pred_mask, norm=norm)
     ax2.set_title("Mask probability map")
+    ax2.axis('off')
+    
     ax3.imshow(target, cmap="gray")
     ax3.set_title("Real mask")
+    ax3.axis('off')
 
     fig.tight_layout()
     return fig

@@ -1,25 +1,61 @@
+import argparse
+import os
+
+import numpy as np
+import skimage.io
 import torch
+import tqdm
+from torch.utils.data import DataLoader
+
+import torch.nn.functional as F
+
 import nets
 from nets import MODEL_DICT
-
-import argparse
-from torchvision.datasets import ImageFolder
-
+from utils.loaders import test_dataset
 
 parser = argparse.ArgumentParser(description="Perform inference on a test dataset.")
-parser.add_argument("--model", type=str)
-parser.add_argument("--data", type=str, help="Folder for the data.")
+parser.add_argument("--model", type=str, choices=MODEL_DICT.keys(),
+                    help="Model class to use.", required=True)
+parser.add_argument("--output", type=str, help="Output directory path.")
+parser.add_argument("--weights", "-w", required=True, metavar="WEIGHTS_FILE",
+                    type=str,
+                    help="Model weights.")
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 args = parser.parse_args()
 
-DATA_FOLDER = args.data
-
-dataset = ImageFolder(DATA_FOLDER)
-
 
 if __name__ == "__main__":
+    CHECKPOINT_FILE = args.weights
+    print("Checkpoint file: {:s}".format(CHECKPOINT_FILE))
+    checkpoint = torch.load(CHECKPOINT_FILE)
+    model_state_dict = checkpoint['model_state_dict']
+    
     model_class = MODEL_DICT[args.model]
-    model = model_class(num_classes=2)  # binary classification
+    model = model_class(num_classes=2, num_channels=1)  # binary classification
+    model.load_state_dict(model_state_dict)
     model = model.to(device)
+    model.eval()
+    
+    OUTPUT_DIR = args.output
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+    test_loader = DataLoader(test_dataset, 1, shuffle=False)
+    
+    trange = tqdm.tqdm(test_loader)
+    trange.set_description(desc="Inference:")
+    with torch.no_grad():
+        for i, img in enumerate(trange):
+            original_size = img.shape[2:]
+            img = img.to(device)
+            img = F.interpolate(img, size=(224, 224))
+            output = model(img).cpu()
+            output = F.interpolate(output, size=original_size)
+            prediction = torch.argmax(output, dim=1, keepdim=True) * 255
+            prediction = prediction.byte().numpy()[0]
+            # import ipdb; ipdb.set_trace()
+            prediction = np.moveaxis(prediction, 0, -1)
+            filename = os.path.join(OUTPUT_DIR, "{:d}.png".format(i+1))
+            trange.set_postfix_str("Saving result {:s}".format(filename))
+            skimage.io.imsave(filename, prediction)

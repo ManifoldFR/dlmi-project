@@ -15,11 +15,15 @@ from utils import losses
 from utils.plot import plot_prediction
 from utils.loaders import train_dataset, val_dataset
 
+torch.random.manual_seed(0)
+np.random.seed(0)
+
 
 LOSSES_DICT = {
     "crossentropy": nn.CrossEntropyLoss(),
     "dice": losses.soft_dice_loss,
     "iou": losses.soft_iou_loss,
+    "focal": losses.focal_loss,
     "combined": losses.CombinedLoss()
 }
 
@@ -31,6 +35,8 @@ parser.add_argument("--loss", type=str, choices=list(LOSSES_DICT.keys()),
 parser.add_argument("--epochs", "-E", default=40, type=int)
 parser.add_argument("--batch-size", "-B", default=1, type=int)
 parser.add_argument("--lr", "-lr", default=2e-5, type=float)
+parser.add_argument("--validate-every", "-ve", default=2, type=int,
+                    help="Validate every X epochs (default %(default)d)")
 
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -43,7 +49,8 @@ def train(model, loader: torch.utils.data.DataLoader, criterion, metric, optimiz
     for key in metric:
         all_acc[key] = []
     
-    for idx, (img, target) in tqdm.tqdm(enumerate(loader), desc='Training'):
+    iterator = tqdm.tqdm(enumerate(loader), desc='Training epoch {:d}'.format(epoch))
+    for idx, (img, target) in iterator:
         img = img.to(device)
         # print(target.shape)
         # for 1 class, add dim 1
@@ -124,7 +131,7 @@ if __name__ == "__main__":
 
     # Make model
     model_class = MODEL_DICT[args.model]
-    model = model_class(num_classes=2)  # binary classification
+    model = model_class(num_classes=2, num_channels=1)  # binary classification
     model = model.to(device)
     
     # Define optimizer and metrics
@@ -138,34 +145,34 @@ if __name__ == "__main__":
     }
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=6, gamma=0.8)
 
+    # Define TensorBoard summary
+    DATASET = "DRIVE"
+    comment = "{:s}-{:s}-BatchNorm-{:s}Loss".format(
+        DATASET, args.model, args.loss)
+    writer = SummaryWriter(comment=comment)
+    
     # Define loaders
     train_loader = DataLoader(train_dataset, BATCH_SIZE, shuffle=True)
     val_loader = DataLoader(val_dataset, BATCH_SIZE, shuffle=False)
     
-    CHECKPOINT_EVERY = 10
-
-    # Define TensorBoard summary
-    comment = "DRIVE-{:s}-BatchNorm-{:s}Loss".format(args.model, args.loss)
-    writer = SummaryWriter(comment=comment)
-    
-    # writer.add_hparams({
-    #     "lr": args.lr,
-    #     "bsize": BATCH_SIZE,
-    # }, {})
+    CHECKPOINT_EVERY = 20
+    VALIDATE_EVERY = args.validate_every
 
     for epoch in range(EPOCHS):
         loss, acc = train(model, train_loader, criterion, metric, optimizer, epoch, writer)
-        val_loss, val_acc = validate(model, val_loader, criterion, metric)
-        print("Epoch {:d}: Train loss {:.3g} -- Dice {:.3g} | Validation loss {:.3g} -- Dice {:.3g}".format(
-            epoch, loss, acc["dice"], val_loss, val_acc["dice"]))
         scheduler.step()
 
         writer.add_scalar("Train/Loss", loss, epoch)
         writer.add_scalar("Train/Dice score", acc["dice"], epoch)
         writer.add_scalar("Train/IoU", acc["iou"], epoch)
-        writer.add_scalar("Validation/Loss", val_loss, epoch)
-        writer.add_scalar("Validation/Dice score", val_acc["dice"], epoch)
-        writer.add_scalar("Validation/IoU", val_acc["iou"], epoch)
+        
+        if (epoch + 1) % VALIDATE_EVERY == 0:
+            val_loss, val_acc = validate(model, val_loader, criterion, metric)
+            print("Epoch {:d}: Train loss {:.3g} -- Dice {:.3g} | Validation loss {:.3g} -- Dice {:.3g}".format(
+                epoch, loss, acc["dice"], val_loss, val_acc["dice"]))
+            writer.add_scalar("Validation/Loss", val_loss, epoch)
+            writer.add_scalar("Validation/Dice score", val_acc["dice"], epoch)
+            writer.add_scalar("Validation/IoU", val_acc["iou"], epoch)
         
         
         if epoch > 0 and ((epoch+1) % CHECKPOINT_EVERY == 0):
@@ -181,4 +188,4 @@ if __name__ == "__main__":
                 'val_acc': val_acc,
             }, save_path)
 
-    writer.close()    
+    writer.close()
