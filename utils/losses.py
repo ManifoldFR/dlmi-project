@@ -109,13 +109,18 @@ def tanimoto_complement_loss(input: torch.Tensor, target: torch.Tensor, softmax=
 
 
 def focal_loss(input: torch.Tensor, target: torch.Tensor, gamma=2, alpha=1):
+    """Focal loss (auto-weighted cross entropy variant).
+    
+    See: https://arxiv.org/pdf/1708.02002.pdf 
+    """
     target = target.detach()
-    bce_loss = F.binary_cross_entropy(input, target.float())
-    loss = alpha * (1 - torch.exp(-bce_loss)) ** gamma * bce_loss
+    ce_loss = F.cross_entropy(input, target)
+    loss = alpha * (1 - torch.exp(-ce_loss)) ** gamma * ce_loss
     return loss
 
 
 def generalized_dice_loss(y_pred, y_true):
+    """Multi-label generalization of the dice loss."""
     Nb_img = y_pred.shape[-1]
     r = torch.zeros((Nb_img, 2))
     for l in range(Nb_img):

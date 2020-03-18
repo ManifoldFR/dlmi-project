@@ -47,7 +47,7 @@ def plot_prediction(img: torch.Tensor, pred_mask: torch.Tensor, target: torch.Te
     
     norm = colors.PowerNorm(0.5, vmin=0., vmax=1., clip=True)
     splt_nums = (1, num_plots)
-    fig, axes = plt.subplots(*splt_nums, figsize=(4*num_plots+1, 5), dpi=60)
+    fig, axes = plt.subplots(*splt_nums, figsize=(5*num_plots+1, 5), dpi=60)
     fig: plt.Figure
     (ax1, ax2, ax3) = axes
 

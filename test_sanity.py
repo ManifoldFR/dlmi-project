@@ -1,14 +1,15 @@
 """Sanity checks for things like dimensions etc"""
 import numpy as np
-from nets.unet import UNet
-from utils.loaders import train_dataset, train_transform
+import nets
+from utils.loaders import DATASET_MAP, train_transform
 
 
 def test_unet():
-    net = UNet(num_channels=1)
+    net = nets.AttentionUNet(num_channels=1)
+
+    train_dataset = DATASET_MAP['DRIVE']['train']
 
     train_dataset.use_mask = True  # override
-    train_dataset.green_only = True
     # tensors, supposedly
     img, mask, target = zip(*[train_dataset[i] for i in range(2)])
     import torch

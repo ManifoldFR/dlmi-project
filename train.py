@@ -193,7 +193,7 @@ if __name__ == "__main__":
         
         
         if epoch > 0 and ((epoch+1) % CHECKPOINT_EVERY == 0):
-            save_path = "models/%s_%03d.pth" % (comment, epoch)
+            save_path = "models/%s_%03d.pth" % (writer.log_dir, epoch)
             print("Saving checkpoint {:s} at epoch {:d}".format(save_path, epoch))
             # Save checkpoint
             torch.save({

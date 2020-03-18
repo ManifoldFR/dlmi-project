@@ -161,7 +161,7 @@ class AttentionGate(nn.Module):
         gate_channels : int
             No. of feature-maps in gate vector.
         feat_channels : int
-            No. of feature-maps in lower-level feature vector.
+            No. of feature-maps in lower-level feature vector (e.g. skip connection).
         int_channels : int
             No. of intermediate channels for the attention module.
         """
@@ -182,7 +182,11 @@ class AttentionGate(nn.Module):
         g
             Gate signal (feature maps from downside block).
         x
-            Skip connection weight.
+            Skip connection input.
+        
+        Returns
+        -------
+        Re-weighted skip connection input. Should have the same number of channels.
         """
         g = self.gate_bn(self.gate_conv(g))
         xp = self.feat_bn(self.feat_conv(x))
@@ -190,7 +194,7 @@ class AttentionGate(nn.Module):
         z = torch.relu(z)
         z = self.alpha_conv(z)
         alpha = self.alpha_activ(z)
-        xhat = xp * alpha
+        xhat = x * alpha  # re-weighted signal
         return xhat
 
 
@@ -218,7 +222,7 @@ class AttentionUNet(nn.Module):
         super().__init__()
         self.num_channels = num_channels
         self.num_classes = num_classes
-
+        
         self.in_conv = nn.Sequential(
             ConvBlock(num_channels, 64),
             ConvBlock(64, 64)
@@ -240,14 +244,14 @@ class AttentionUNet(nn.Module):
             self.gate_feat_dims = gate_feat_dims
 
         # reminder: convolves then upsamples
-        self.att1 = AttentionGate(512, 512, gate_feat_dims[0])
+        self.att1 = AttentionGate(512, 512, self.gate_feat_dims[0])
         self.up1 = _UpBlock(512, 256)
-        self.att2 = AttentionGate(256, 256, gate_feat_dims[1])
+        self.att2 = AttentionGate(256, 256, self.gate_feat_dims[1])
         self.up2 = _UpBlock(256, 128)
-        self.att3 = AttentionGate(128, 128, gate_feat_dims[2])
+        self.att3 = AttentionGate(128, 128, self.gate_feat_dims[2])
         self.up3 = _UpBlock(128, 64)
 
-        self.att4 = AttentionGate(64, 64, gate_feat_dims[3])
+        self.att4 = AttentionGate(64, 64, self.gate_feat_dims[3])
         self.out_conv = nn.Sequential(
             ConvBlock(128, 64),
             ConvBlock(64, 64),

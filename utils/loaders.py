@@ -15,7 +15,7 @@ SIZE = 320
 MAX_SIZE = 448
 
 def make_train_transform(mean=0, std=1):
-    transform_list = [
+    _train = Compose([
         HorizontalFlip(),
         VerticalFlip(),
         GaussianBlur(blur_limit=3, p=.2),
@@ -27,8 +27,8 @@ def make_train_transform(mean=0, std=1):
         CLAHE(always_apply=True),
         Normalize(mean, std, always_apply=True),
         ToTensor(always_apply=True)
-    ]
-    return Compose(transform_list)
+    ])
+    return _train
 
 
 ## Use the mean and std values recorded in the JSON file !

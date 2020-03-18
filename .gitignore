@@ -28,3 +28,6 @@
 *.pth
 # logs
 runs/
+
+# Test set inference results
+*_predictions/

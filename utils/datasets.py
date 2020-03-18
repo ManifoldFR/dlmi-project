@@ -24,7 +24,7 @@ class DriveDataset(VisionDataset):
         Only use the green channel (idx 1).
     """
     
-    def __init__(self, root: str, transforms=None, train: bool=False, subset: slice=None, return_mask=False, green_only=False):
+    def __init__(self, root: str, transforms=None, train: bool=False, subset: slice=None, return_mask=False, green_only=True):
         """
         Parameters
         ----------
@@ -92,8 +92,16 @@ class STAREDataset(VisionDataset):
     """STARE (STructured Analysis of the Retina) retinography dataset
     http://cecas.clemson.edu/~ahoover/stare/.
     
+    Parameters
+    ----------
+    transforms
+        Applies to both image, mask and target segmentation mask (when available).
+    subset : slice
+        Subset of indices of the dataset we want to use.
+    green_only : bool
+        Only use the green channel (idx 1).
     """
-    def __init__(self, root: str, transforms=None, combination_type="random", subset=None):
+    def __init__(self, root: str, transforms=None, combination_type="random", subset=None, green_only=True):
         super().__init__(root, transforms=transforms)
         self.images = sorted(glob.glob(os.path.join(root, "images/*.ppm")))
         self.target1 = sorted(glob.glob(os.path.join(root, "annotation 1/*.png")))
@@ -103,6 +111,7 @@ class STAREDataset(VisionDataset):
             self.target1 = self.target1[subset]
             self.target2 = self.target2[subset]
         self.combination_type = combination_type
+        self.green_only = green_only
 
     def __len__(self):
         return len(self.images)
@@ -116,6 +125,9 @@ class STAREDataset(VisionDataset):
         if self.transforms is not None:
             augmented = self.transforms(image=img, mask=target)
             img = augmented['image']
+            # pick only green channel
+            if self.green_only:
+                img = img[[1]]
             target = augmented['mask']
         return img, target
 
