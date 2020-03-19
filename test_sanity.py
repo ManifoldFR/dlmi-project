@@ -5,7 +5,7 @@ from utils.loaders import DATASET_MAP, train_transform
 
 
 def test_unet():
-    net = nets.AttentionUNet(num_channels=1)
+    net = nets.UNet(num_channels=1)
 
     train_dataset = DATASET_MAP['DRIVE']['train']
 

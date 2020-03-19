@@ -11,7 +11,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from nets.unet import AttentionUNet, UNet
 from nets import MODEL_DICT
-from utils import losses
+from utils import losses, metrics
 from utils.plot import plot_prediction
 from utils.loaders import DATASET_MAP, denormalize
 
@@ -152,9 +152,10 @@ if __name__ == "__main__":
     print("Using loss {:s}".format(args.loss))
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
     criterion = LOSSES_DICT[args.loss]
-    metric = {
-        "dice": losses.dice_score,
-        "iou": losses.iou_pytorch
+    metric_dict = {
+        "dice": metrics.dice_score,
+        "iou": metrics.iou_pytorch,
+        "acc": metrics.accuracy
     }
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.8)
 
@@ -176,24 +177,26 @@ if __name__ == "__main__":
     VALIDATE_EVERY = args.validate_every
 
     for epoch in range(EPOCHS):
-        loss, acc = train(model, train_loader, criterion, metric, optimizer, epoch, writer)
+        loss, acc = train(model, train_loader, criterion, metric_dict, optimizer, epoch, writer)
         scheduler.step()
 
         writer.add_scalar("Train/Loss", loss, epoch)
         writer.add_scalar("Train/Dice score", acc["dice"], epoch)
         writer.add_scalar("Train/IoU", acc["iou"], epoch)
+        writer.add_scalar("Train/Accuracy", acc["iou"], epoch)
         
         if (epoch + 1) % VALIDATE_EVERY == 0:
-            val_loss, val_acc = validate(model, val_loader, criterion, metric)
+            val_loss, val_acc = validate(model, val_loader, criterion, metric_dict)
             print("Epoch {:d}: Train loss {:.3g} -- Dice {:.3g} | Validation loss {:.3g} -- Dice {:.3g}".format(
                 epoch, loss, acc["dice"], val_loss, val_acc["dice"]))
             writer.add_scalar("Validation/Loss", val_loss, epoch)
             writer.add_scalar("Validation/Dice score", val_acc["dice"], epoch)
             writer.add_scalar("Validation/IoU", val_acc["iou"], epoch)
+            writer.add_scalar("Validation/Accuracy", val_acc["acc"], epoch)
         
         
         if epoch > 0 and ((epoch+1) % CHECKPOINT_EVERY == 0):
-            save_path = "models/%s_%03d.pth" % (writer.log_dir, epoch)
+            save_path = "models/%s_%03d.pth" % (writer.log_dir.split("/")[1], epoch)
             print("Saving checkpoint {:s} at epoch {:d}".format(save_path, epoch))
             # Save checkpoint
             torch.save({
