@@ -17,6 +17,8 @@ tensorboard --logdir runs/
 
 ## Training
 
+General configuration parameters (training, validation slices, image input size) are located in `config.py`.
+
 To launch the training script:
 ```bash
 python train.py --model attunet --loss combined --lr 0.001 -E 80

@@ -55,7 +55,7 @@ class ConvBlock(nn.Module):
             self.bn = nn.Identity()
         else:
             raise TypeError("Wrong type of normalization layer provided for ConvBlock")
-        self.activation = nn.ReLU()
+        self.activation = nn.ReLU(inplace=True)
 
     def forward(self, x: Tensor):
         x = self.conv(x)
@@ -202,14 +202,18 @@ class AttentionGate(nn.Module):
             No. of intermediate channels for the attention module.
         """
         super().__init__()
-        self.gate_conv = nn.Conv2d(
-            gate_channels, int_channels, kernel_size=1, bias=False)
+        self.feat_channels = feat_channels
+        self.gate_channels = gate_channels
+        self.int_channels = int_channels
+        
+        self.gate_conv = nn.Conv2d(gate_channels, int_channels, kernel_size=1,
+                                   bias=False)
         self.gate_bn = nn.BatchNorm2d(int_channels)
         self.feat_conv = nn.Conv2d(feat_channels, int_channels, kernel_size=1)
         self.feat_bn = nn.BatchNorm2d(int_channels)
 
         self.alpha_conv = nn.Conv2d(int_channels, 1, kernel_size=1)
-        self.alpha_activ = nn.Sigmoid()
+        self.activation = nn.Softmax(dim=1)
 
     def forward(self, g: Tensor, x: Tensor) -> Tensor:
         """
@@ -222,16 +226,14 @@ class AttentionGate(nn.Module):
         
         Returns
         -------
-        Re-weighted skip connection input. Should have the same number of channels.
+        Attention map alpha.
         """
         g = self.gate_bn(self.gate_conv(g))
         xp = self.feat_bn(self.feat_conv(x))
-        z = g + xp
-        z = torch.relu(z)
+        z = torch.relu(g + xp, inplace=True)
         z = self.alpha_conv(z)
-        alpha = self.alpha_activ(z)
-        xhat = x * alpha  # re-weighted signal
-        return xhat
+        alpha = self.activation(z)
+        return alpha
 
 
 class AttentionUNet(nn.Module):
@@ -301,12 +303,12 @@ class AttentionUNet(nn.Module):
         x4 = self.down3(x3)  # 512 * 1/8 * 1/8
         x = self.center(x4)  # 512 * 1/8 * 1/8
         alp1 = self.att1(x, x4)
-        x = self.up1(x, alp1)  # 256 * 1/4 * 1/4
+        x = self.up1(x, alp1 * x4)  # 256 * 1/4 * 1/4
         alp2 = self.att2(x, x3)
-        x = self.up2(x, alp2)  # 128 * 1/2 * 1/2
+        x = self.up2(x, alp2 * x3)  # 128 * 1/2 * 1/2
         alp3 = self.att3(x, x2)
-        x = self.up3(x, alp3)
+        x = self.up3(x, alp3 * x2)
         alp4 = self.att4(x, x1)
-        z = torch.cat((alp4, x), dim=1)
+        z = torch.cat((alp4 * x1, x), dim=1)
         out = self.out_conv(z)
         return out

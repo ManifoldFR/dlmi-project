@@ -3,12 +3,13 @@ import torch
 from torch import Tensor
 from torch.nn import functional as F
 from sklearn.metrics import accuracy_score as _sk_acc
+from sklearn.metrics import roc_auc_score as _sk_rocauc
 
 EPSILON = 1e-8
 
 
 def iou_pytorch(outputs: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
-    """Hard Intersection-over-Union (IoU) metric.
+    """Hard Intersection-over-Union (IoU) metric (aka Jaccard similarity score).
     
     Source: https://www.kaggle.com/iezepov/fast-iou-scoring-metric-in-pytorch-and-numpy
     """
@@ -28,7 +29,7 @@ def iou_pytorch(outputs: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
 
 
 def dice_score(input: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
-    """Dice score metric."""
+    """Sørensen–Dice coefficient metric. Equivalent to the F1 score."""
     # You can comment out this line if you are passing tensors of equal shape
     # But if you are passing output from UNet or something it will most probably
     # be with the BATCH x 1 x H x W shape
@@ -47,3 +48,9 @@ def accuracy(input: torch.Tensor, labels: torch.Tensor) -> float:
     labels = labels.flatten().detach().cpu().numpy()
     acc = _sk_acc(labels, input)
     return acc
+
+def roc_auc_score(input: torch.Tensor, labels: torch.Tensor) -> float:
+    input = input.flatten().detach().cpu().numpy()
+    labels = labels.flatten().detach().cpu().numpy()
+    score_ = _sk_rocauc(labels, input)
+    return score_

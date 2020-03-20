@@ -12,7 +12,7 @@ def soft_dice_loss(input: torch.Tensor, target: torch.Tensor, softmax=True) -> t
     Parameters
     ----------
     input : Tensor
-        (N,C,H,W) Predicted classes for each pixel.
+        (N,K,H,W) Predicted classes for each pixel.
     target : LongTensor
         (N,K,H,W) Tensor of pixel labels where `K` is the no. of classes.
     softmax : bool
