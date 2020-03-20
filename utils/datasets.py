@@ -105,7 +105,7 @@ class STAREDataset(VisionDataset):
     green_only : bool
         Only use the green channel (idx 1).
     """
-    def __init__(self, root: str, transforms=None, combination_type="random", subset=None, green_only=True):
+    def __init__(self, root: str="data/stare", transforms=None, combination_type="random", subset=None, green_only=True):
         super().__init__(root, transforms=transforms)
         self.images = sorted(glob.glob(os.path.join(root, "images/*.ppm")))
         self.target1 = sorted(glob.glob(os.path.join(root, "annotation 1/*.png")))
@@ -136,14 +136,75 @@ class STAREDataset(VisionDataset):
             target = augmented['mask']
         return img, target
 
-    def combine_multiple_targets(self, t1, t2):
-        if self.combination_type == "random":
-            target=[t1,t2][np.random.randint(2)]
+    def combination_multiple_targets(self, t1, t2):
+        return combine_multiple_targets(t1, t2, self.combination_type)
 
-        elif self.combination_type == "union":
-            target=(t1+t2>0)*1
+class ARIADataset(VisionDataset):
+    """ARIA dataset."""
+
+    def __init__(self, root: str="data/aria", transforms=None, combination_type="random", subset=None, green_only=True):
+        super().__init__(root, transforms=transforms)
+        self._root_path = root
+        self.images = sorted(glob.glob(os.path.join(root, "images/*.tif")))
+        self.target1 = sorted(glob.glob(os.path.join(root, "annotation 1/*.tif")))
+        self.target2 = sorted(glob.glob(os.path.join(root, "annotation 2/*.tif")))
+        if subset is not None:
+            self.images = self.images[subset]
+            self.target1 = self.target1[subset]
+            self.target2 = self.target2[subset]
+        self.combination_type = combination_type
+        self.green_only = green_only
     
-        elif self.combination_type == "intersection":
-            target=((t1==1) & (t2==1))*1
+    def _get_infos(self):
+        """Build a list that maps each img idx to corresponding
+        image file, annotations and fovea if available."""
+        self._data = []
+        for i, filename in enumerate(self.images):
+            # Extract info by looking at the filename
+            filename_parts_ = os.path.splitext(filename)[0].split("_")
+            file_type = filename_parts_[1]  # either 'a', 'c', or 'd'
+            # Tricky part is getting the fovea disc file
+            fovea_filename = os.path.splitext(filename)[0] + "_dfs.tif"
+            # add something like [0001] at the beginning if necessary
+            self._data.append({
+                "img": filename,
+                "t1": self.target1[i],
+                "t2": self.target2[i],
+                "disc": fovea_filename,
+                "file_type": file_type
+            })
+            
 
-        return target
+    def __len__(self):
+        return len(self.images)
+
+    def __getitem__(self, idx):
+        img = cv2.cvtColor(cv2.imread(self._data[idx]['img']),
+                           cv2.COLOR_BGR2RGB)
+        img = F.gamma_transform(img, GAMMA_CORRECTION)
+        t1 = cv2.imread(self._data[idx]['t1'], cv2.IMREAD_UNCHANGED)
+        t2 = cv2.imread(self._data[idx]['t2'], cv2.IMREAD_UNCHANGED)
+        target = self.combine_multiple_targets(t1, t2)
+        if self.transforms is not None:
+            augmented = self.transforms(image=img, mask=target)
+            img = augmented['image']
+            # pick only green channel
+            if self.green_only:
+                img = img[[1]]
+            target = augmented['mask']
+        return img, target
+
+    def combination_multiple_targets(self, t1, t2):
+        return combine_multiple_targets(t1, t2, self.combination_type)
+
+def combine_multiple_targets(t1, t2, combination_type):
+    if combination_type == "random":
+        target=[t1,t2][np.random.randint(2)]
+
+    elif combination_type == "union":
+        target=(t1+t2>0)*1
+
+    elif combination_type == "intersection":
+        target=((t1==1) & (t2==1))*1
+
+    return target

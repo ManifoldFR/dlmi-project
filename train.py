@@ -15,8 +15,8 @@ from utils import losses, metrics
 from utils.plot import plot_prediction
 from utils.loaders import DATASET_MAP, denormalize
 
-torch.random.manual_seed(0)
-np.random.seed(0)
+import config
+
 
 
 LOSSES_DICT = {
@@ -39,6 +39,7 @@ parser.add_argument("--validate-every", "-ve", default=4, type=int,
 parser.add_argument("--epochs", "-E", default=40, type=int)
 parser.add_argument("--batch-size", "-B", default=1, type=int)
 parser.add_argument("--lr", "-lr", default=2e-5, type=float)
+parser.add_argument("--extra-tag", type=str)
 
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -155,7 +156,8 @@ if __name__ == "__main__":
     metric_dict = {
         "dice": metrics.dice_score,
         "iou": metrics.iou_pytorch,
-        "acc": metrics.accuracy
+        "acc": metrics.accuracy,
+        "rocauc": metrics.roc_auc_score
     }
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.8)
 
@@ -167,13 +169,15 @@ if __name__ == "__main__":
     # Define TensorBoard summary
     comment = "{:s}-{:s}-BatchNorm-{:s}Loss".format(
         DATASET, args.model, args.loss)
+    if args.extra_tag is not None:
+        comment += "-{:s}".format(args.extra_tag)
     writer = SummaryWriter(comment=comment)
     
     # Define loaders
     train_loader = DataLoader(train_dataset, BATCH_SIZE, shuffle=True)
     val_loader = DataLoader(val_dataset, BATCH_SIZE, shuffle=False)
     
-    CHECKPOINT_EVERY = 20
+    CHECKPOINT_EVERY = 25
     VALIDATE_EVERY = args.validate_every
 
     for epoch in range(EPOCHS):
@@ -183,7 +187,8 @@ if __name__ == "__main__":
         writer.add_scalar("Train/Loss", loss, epoch)
         writer.add_scalar("Train/Dice score", acc["dice"], epoch)
         writer.add_scalar("Train/IoU", acc["iou"], epoch)
-        writer.add_scalar("Train/Accuracy", acc["iou"], epoch)
+        writer.add_scalar("Train/Accuracy", acc["acc"], epoch)
+        writer.add_scalar("Train/AUC", acc["rocauc"], epoch)
         
         if (epoch + 1) % VALIDATE_EVERY == 0:
             val_loss, val_acc = validate(model, val_loader, criterion, metric_dict)
@@ -193,6 +198,7 @@ if __name__ == "__main__":
             writer.add_scalar("Validation/Dice score", val_acc["dice"], epoch)
             writer.add_scalar("Validation/IoU", val_acc["iou"], epoch)
             writer.add_scalar("Validation/Accuracy", val_acc["acc"], epoch)
+            writer.add_scalar("Validation/AUC", val_acc["rocauc"], epoch)
         
         
         if epoch > 0 and ((epoch+1) % CHECKPOINT_EVERY == 0):
