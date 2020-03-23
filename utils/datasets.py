@@ -113,10 +113,12 @@ class STAREDataset(VisionDataset):
         self.images = sorted(glob.glob(os.path.join(root, "images/*.ppm")))
         self.target1 = sorted(glob.glob(os.path.join(root, "annotation 1/*.png")))
         self.target2 = sorted(glob.glob(os.path.join(root, "annotation 2/*.png")))
+        self.staple_target = sorted(glob.glob(os.path.join(root, "STAPLE/*.png")))
         if subset is not None:
             self.images = self.images[subset]
             self.target1 = self.target1[subset]
             self.target2 = self.target2[subset]
+            self.staple_target = self.staple_target[subset]
         self.combination_type = combination_type
         self.green_only = green_only
 
@@ -127,9 +129,14 @@ class STAREDataset(VisionDataset):
         img_path = self.images[index]
         img = cv2.cvtColor(cv2.imread(img_path), cv2.COLOR_BGR2RGB)
         img = F.gamma_transform(img, GAMMA_CORRECTION)
-        t1 = cv2.imread(self.target1[index], cv2.IMREAD_UNCHANGED)
-        t2 = cv2.imread(self.target2[index], cv2.IMREAD_UNCHANGED)
-        target = self.combine_multiple_targets(t1, t2)
+        
+        if self.combination_type == "STAPLE" : 
+            target = cv2.imread(self.staple_target[index], cv2.IMREAD_UNCHANGED)
+        else :
+            t1 = cv2.imread(self.target1[index], cv2.IMREAD_UNCHANGED)
+            t2 = cv2.imread(self.target2[index], cv2.IMREAD_UNCHANGED)
+            target = self.combine_multiple_targets(t1, t2)
+            
         if self.transforms is not None:
             augmented = self.transforms(image=img, mask=target)
             img = augmented['image']
