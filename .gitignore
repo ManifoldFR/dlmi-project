@@ -21,6 +21,9 @@
 *.gz
 *.ini
 
+*.pkl
+*.pickle
+
 *.RDS
 *.Rhistory
 
