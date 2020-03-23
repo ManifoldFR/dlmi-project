@@ -12,6 +12,7 @@ train_dataset = STAREDataset("data/stare", subset=SUBSET_SLICE)
 print(len(train_dataset))
 
 loader = DataLoader(train_dataset, batch_size=8, num_workers=1)
+#loader = DataLoader(train_dataset, batch_size=8, num_workers=0)
 
 mean = 0.
 std = 0.
