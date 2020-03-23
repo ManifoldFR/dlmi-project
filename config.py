@@ -11,6 +11,9 @@ DRIVE_SUBSET_VAL = slice(15, 23)
 STARE_SUBSET_TRAIN = slice(0, 15)
 STARE_SUBSET_VAL = slice(15, 21)
 
+ARIA_SUBSET_TRAIN = slice(0, 107)
+ARIA_SUBSET_VAL = slice(107, 143)
+
 # Input image resolution
 PATCH_SIZE = 320
 
