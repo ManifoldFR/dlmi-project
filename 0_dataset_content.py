@@ -79,8 +79,11 @@ aria_dict["annot2"] = [file for file in aria_dict["annot2"] if ".tif" in file]
 aria_dict["healthy"] = [("aria_c_" in file)*1 for file in aria_dict["images"]]
 aria_dict["diabetic"] = [("aria_d_" in file)*1 for file in aria_dict["images"]]
 aria_dict["AMD"] = [("aria_a_" in file)*1 for file in aria_dict["images"]]
+aria_dict["disc_fovea_available"] = np.array(aria_dict["diabetic"]) + np.array(aria_dict["healthy"])
+aria_dict["disc_fovea"] = [""]*np.sum(aria_dict["AMD"])+os.listdir(os.path.join(DATA_FOLDER, "markupdiscfovea"))[:-1]
 
 aria_df = pd.DataFrame(aria_dict)
+
 aria_df.to_csv(os.path.join(DATA_FOLDER,"aria_df.csv"))
 
 
