@@ -128,7 +128,7 @@ def validate(model, loader, criterion, metric):
             fig = plot_prediction(imgs_, outputs_, targets_, mean, std)
             writer.add_figure("Validation/Prediction",  fig, epoch)
         mean_loss = np.mean(all_loss)
-        return np.mean(all_loss), {key: np.mean(a) for key, a in all_acc.items()}
+        return mean_loss, {key: np.mean(a) for key, a in all_acc.items()}
 
 
 if __name__ == "__main__":
