@@ -3,7 +3,10 @@ import glob
 import torch
 import numpy as np
 import cv2
-from config import GAMMA_CORRECTION
+try : 
+    from config import GAMMA_CORRECTION
+except :
+    GAMMA_CORRECTION = 1.2
 import imageio
 from torch.utils.data import Dataset
 from torchvision.datasets import VisionDataset
