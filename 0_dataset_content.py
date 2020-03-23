@@ -66,7 +66,6 @@ for im_name in os.listdir(os.path.join(DATA_FOLDER,"labels","labels_vk")):
 ### ARIA DATABASE 
 ######################################################################
 
-# DATA_FOLDER = os.path.join(PROJECT_FOLDER,"data", "stare")
 DATA_FOLDER = os.path.join("data", "aria")
 
 aria_dict={"images" : os.listdir(os.path.join(DATA_FOLDER, "images")),
@@ -87,6 +86,30 @@ aria_df = pd.DataFrame(aria_dict)
 aria_df.to_csv(os.path.join(DATA_FOLDER,"aria_df.csv"))
 
 
+######################################################################
+### CHASEDB DATABASE 
+######################################################################
+
+DATA_FOLDER = os.path.join("data", "chasedb1")
+
+chase_dict={"images" : os.listdir(os.path.join(DATA_FOLDER, "images")),
+            "STAPLE" : os.listdir(os.path.join(DATA_FOLDER, "STAPLE")),
+            "annot1" : os.listdir(os.path.join(DATA_FOLDER, "annotation 1")),
+            "annot2" : os.listdir(os.path.join(DATA_FOLDER, "annotation 2"))}
+
+chase_dict["annot1"] = [file for file in chase_dict["annot1"] if ".png" in file]
+chase_dict["annot2"] = [file for file in chase_dict["annot2"] if ".png" in file]
+chase_dict["STAPLE"] = [file for file in chase_dict["STAPLE"] if ".png" in file]
+
+chase_dict["left_eye"] = [("L.jpg" in file)*1 for file in chase_dict["images"]]
+chase_dict["right_eye"] = [("R.jpg" in file)*1 for file in chase_dict["images"]]
+
+chase_dict["disc_fovea_available"] = 0
+chase_dict["disc_fovea"] = [""]*len(chase_dict["images"])
+
+chase_df = pd.DataFrame(chase_dict)
+
+chase_df.to_csv(os.path.join(DATA_FOLDER,"chase_df.csv"))
 
 
 
