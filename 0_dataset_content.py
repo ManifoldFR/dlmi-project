@@ -41,8 +41,6 @@ display(diagnose.iloc[labeled_index])
 print(sum(diagnose.iloc[labeled_index]["code"]==0))
 print(sum(diagnose.iloc[labeled_index]["description"].str.contains("Normal") | diagnose["description"].str.contains("normal")))
 
-
-
 ## Conversion to png format (lossless)
 for im_name in os.listdir(os.path.join(DATA_FOLDER,"images")):
 #    print(im_name)
@@ -60,6 +58,26 @@ for im_name in os.listdir(os.path.join(DATA_FOLDER,"labels","labels_vk")):
     im.save(os.path.join(DATA_FOLDER, "annotation 2", str(im_name[:-4]+".png")),"PNG",quality=100)
 
 
+diagnose_train = diagnose[diagnose.index.isin(labeled_index)]
+diagnose_train.index = range(len(diagnose_train))
+
+stare_dict={"images" : os.listdir(os.path.join(DATA_FOLDER, "images")),
+            "STAPLE" : os.listdir(os.path.join(DATA_FOLDER, "STAPLE")),
+            "annot1" : os.listdir(os.path.join(DATA_FOLDER, "annotation 1")),
+            "annot2" : os.listdir(os.path.join(DATA_FOLDER, "annotation 2"))}
+
+stare_dict["images"] = [file for file in stare_dict["images"] if (".png" in file) and (int(file[2:6])-1 in labeled_index)]
+stare_dict["annot1"] = [file for file in stare_dict["annot1"] if ".png" in file]
+stare_dict["annot2"] = [file for file in stare_dict["annot2"] if ".png" in file]
+stare_dict["disc_fovea_available"] = 0
+stare_dict["disc_fovea"] = [""]*len(stare_dict["images"])
+
+
+stare_df = pd.DataFrame(stare_dict)
+stare_df = pd.concat([stare_df, diagnose_train], axis=1)
+stare_df = stare_df.drop(["img"], axis=1)
+
+stare_df.to_csv(os.path.join(DATA_FOLDER,"stare_df.csv"))
 
 
 ######################################################################
