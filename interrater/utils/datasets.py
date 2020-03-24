@@ -33,9 +33,14 @@ class STAREDataset(VisionDataset):
     def __init__(self, root: str, transforms=None, metrics = "IoU", subset=None, green_only=True):
         super().__init__(root, transforms=transforms)
         self.target_dict = pkl.load(open(os.path.join(root, "interrater_data",'dict_interrater.pkl'), 'rb'))
-        self.images = sorted(glob.glob(os.path.join(root, "stare/images/*.png")))
+#        self.images = sorted(glob.glob(os.path.join(root, "stare/images/*.png")))
+        self.images = [os.path.join(root,"stare", "images", str(r+".ppm")) for r in list(self.target_dict["stare"]["file_img"])]
+        
         # load as tensor the list of interrater metrics for each image
         self.target = torch.tensor(self.target_dict["stare"][metrics])
+        
+        assert len(self.images) == len(self.target)
+        
         if subset is not None:
             self.images = self.images[subset]
             self.target = self.target[subset]
@@ -47,14 +52,17 @@ class STAREDataset(VisionDataset):
     def __getitem__(self, index):
         target = self.target[index]
         img_path = self.images[index]
-        img = cv2.cvtColor(cv2.imread(img_path), cv2.COLOR_BGR2RGB)
-        img = F.gamma_transform(img, GAMMA_CORRECTION)
-        if self.transforms is not None:
-            augmented = self.transforms(image=img)
-            img = augmented['image']
-
-        # pick only green channel (even if no transformation is applied)
-        if self.green_only:
-            img = img[[1]]
-
-        return img, target
+        try : 
+            img = cv2.cvtColor(cv2.imread(img_path), cv2.COLOR_BGR2RGB)
+            img = F.gamma_transform(img, GAMMA_CORRECTION)
+            if self.transforms is not None:
+                augmented = self.transforms(image=img)
+                img = augmented['image']
+    
+            # pick only green channel (even if no transformation is applied)
+            if self.green_only:
+                img = img[[1]]
+    
+            return img, target
+        except : 
+            pdb.set_trace()

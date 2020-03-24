@@ -1,8 +1,8 @@
 
 
-#import os 
-#os.chdir("C:/Users/Philo/Documents/3A -- MVA/DL for medical imaging/retine/dlmi-project")
-#os.getcwd()
+import os 
+os.chdir("C:/Users/Philo/Documents/3A -- MVA/DL for medical imaging/retine/dlmi-project")
+os.getcwd()
 
 
 import torch
@@ -35,10 +35,10 @@ test_in_train = True
 test_in_net = False
 
 ### Training params
-epochs = 4
-batch_size = 5
+epochs = 5
+#batch_size = 5
 #batch_size = 2
-#batch_size = 1
+batch_size = 1
 
 model = "InterraterNet"
 
