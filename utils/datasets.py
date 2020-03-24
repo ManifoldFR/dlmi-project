@@ -198,9 +198,9 @@ class ARIADataset(VisionDataset):
             if self.green_only:
                 img = img[[1]]
             target = augmented['mask']
-        return img, target
+        return img, target.long() / 255
 
-    def combination_multiple_targets(self, t1, t2):
+    def combine_multiple_targets(self, t1, t2):
         return combine_multiple_targets(t1, t2, self.combination_type)
 
 def combine_multiple_targets(t1, t2, combination_type):
