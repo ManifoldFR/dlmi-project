@@ -74,15 +74,15 @@ config_transform=transforms_dict[transforms_name] #import transformation from co
 DATASET_MAP = {
     "STARE": {
         "train": STAREDataset("data/", transforms=config_transform,
-                              metrics="IoU", subset=STARE_SUBSET_TRAIN),
+                              metrics=interrater_metrics, subset=STARE_SUBSET_TRAIN),
         "val": STAREDataset("data/", transforms=config_transform,
-                              metrics="IoU", subset=STARE_SUBSET_VAL)
+                              metrics=interrater_metrics, subset=STARE_SUBSET_VAL)
     },
     "ARIA": {
     "train": STAREDataset("data/", transforms=config_transform,
-                          metrics="IoU", subset=ARIA_SUBSET_TRAIN),
+                          metrics=interrater_metrics, subset=ARIA_SUBSET_TRAIN),
     "val": STAREDataset("data/", transforms=config_transform,
-                          metrics="IoU", subset=ARIA_SUBSET_VAL)
+                          metrics=interrater_metrics, subset=ARIA_SUBSET_VAL)
     }
 }
 

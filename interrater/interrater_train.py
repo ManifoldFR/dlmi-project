@@ -16,6 +16,7 @@ from interrater.nets.interrater_net import InterraterNet
 from interrater.nets import MODEL_DICT
 from interrater.utils.loaders import DATASET_MAP
 
+from interrater.utils.plot import *
 from interrater.config import *
 
 
@@ -81,6 +82,7 @@ def validate(model, loader, criterion, metric):
         the mean loss 
         the mean of selected metrics 
         a dictionnary with images, targets and outputs'''
+        
     model.eval()
     with torch.no_grad():
         all_loss = []
@@ -98,8 +100,11 @@ def validate(model, loader, criterion, metric):
             all_loss.append(loss.item())
             
             for key in metric:
-                acc = metric[key](output, target)
-                all_acc[key].append(acc.item())
+                target_np = target.detach().numpy()
+                output_np = output.detach().numpy()
+                acc = metric[key](output_np, target_np)
+#                all_acc[key].append(acc.item())
+                all_acc[key].append(acc)
             # Store the img, target, prediction for plotting
             imgs_.append(img)
             targets_.append(target)
@@ -109,7 +114,8 @@ def validate(model, loader, criterion, metric):
         outputs_ = torch.cat(outputs_)
         
         mean_loss = np.mean(all_loss)
-        return mean_loss, {key: np.mean(a) for key, a in all_acc.items()}, {"imgs":imgs_, "targets_":targets_, "outputs":outputs_}
+        
+        return mean_loss, {key: np.mean(a) for key, a in all_acc.items()}, {"imgs":imgs_, "targets":targets_, "outputs":outputs_}
 
 
 
@@ -157,16 +163,24 @@ if test_in_train == True :
     CHECKPOINT_EVERY = 20
     VALIDATE_EVERY = validate_every
 
+    save_perf={"train_loss":[], "train_acc":[], "val_loss":[], "val_acc":[], "val_details":[]}
+
     for epoch in range(EPOCHS):
         loss, acc = train(model, train_loader, criterion, metric_dict, optimizer, epoch)
         scheduler.step()
-
+        save_perf["train_loss"].append(loss)
+        save_perf["train_acc"].append(acc)
         
         if (epoch + 1) % VALIDATE_EVERY == 0:
             val_loss, val_acc, val_detail = validate(model, val_loader, criterion, metric_dict)
             print("Epoch {:d}: Train loss {:.3g} -- MAE {:.3g} | Validation loss {:.3g} -- MAE {:.3g}".format(
                 epoch, loss, acc["mae"], val_loss, val_acc["mae"]))
-            
+#            print("val detail\n")
+#            print(val_detail["targets"])
+#            print(val_detail["outputs"])
+            save_perf["val_loss"].append(val_loss)
+            save_perf["val_acc"].append(val_acc)
+            save_perf["val_details"].append(val_detail)
         
         if epoch > 0 and ((epoch+1) % CHECKPOINT_EVERY == 0):
             
@@ -183,7 +197,6 @@ if test_in_train == True :
                 'val_acc': val_acc,
                 'val_detail' : val_detail
             }, save_path)
-
 
 
 #if __name__ == "__main__":
@@ -258,6 +271,14 @@ if test_in_train == True :
 #                'val_acc': val_acc,
 #                'val_detail' : val_detail
 #            }, save_path)
+
+
+
+plot_loss(save_perf, epochs, validate_every, save = True, name= "plot_loss", root = "figures")
+plot_metrics("mae",save_perf, epochs, validate_every, save = True, name= "plot_metric", root = "figures")
+plot_metrics("max_error",save_perf, epochs, validate_every, save = True, name= "plot_metric", root = "figures")
+
+
 
 
 

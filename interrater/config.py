@@ -35,6 +35,7 @@ test_in_train = True
 test_in_net = False
 
 ### Training params
+#epochs = 21
 epochs = 5
 #batch_size = 5
 #batch_size = 2
@@ -43,6 +44,7 @@ batch_size = 1
 model = "InterraterNet"
 
 lr = 1e-3
+#lr = 1e-5
 loss = "MSE"
 
 validate_every = 1
@@ -51,3 +53,14 @@ dataset = "STARE"
 #transforms_name = "None"
 transforms_name = "make_train_transform"
 #transforms_name = "make_basic_train_transform"
+
+#interrater_metrics = "IoU"
+interrater_metrics = "scaled_IoU"
+#interrater_metrics = "scaled_entropy"
+#interrater_metrics = "entropy"
+
+#import pickle as pkl
+#d = pkl.load(open(os.path.join("data", "interrater_data",'dict_interrater.pkl'), 'rb'))
+
+
+
