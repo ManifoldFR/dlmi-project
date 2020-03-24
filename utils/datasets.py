@@ -3,7 +3,10 @@ import glob
 import torch
 import numpy as np
 import cv2
-from config import GAMMA_CORRECTION
+try : 
+    from config import GAMMA_CORRECTION
+except :
+    GAMMA_CORRECTION = 1.2
 import imageio
 from torch.utils.data import Dataset
 from torchvision.datasets import VisionDataset
@@ -110,10 +113,12 @@ class STAREDataset(VisionDataset):
         self.images = sorted(glob.glob(os.path.join(root, "images/*.ppm")))
         self.target1 = sorted(glob.glob(os.path.join(root, "annotation 1/*.png")))
         self.target2 = sorted(glob.glob(os.path.join(root, "annotation 2/*.png")))
+        self.staple_target = sorted(glob.glob(os.path.join(root, "STAPLE/*.png")))
         if subset is not None:
             self.images = self.images[subset]
             self.target1 = self.target1[subset]
             self.target2 = self.target2[subset]
+            self.staple_target = self.staple_target[subset]
         self.combination_type = combination_type
         self.green_only = green_only
 
@@ -124,9 +129,14 @@ class STAREDataset(VisionDataset):
         img_path = self.images[index]
         img = cv2.cvtColor(cv2.imread(img_path), cv2.COLOR_BGR2RGB)
         img = F.gamma_transform(img, GAMMA_CORRECTION)
-        t1 = cv2.imread(self.target1[index], cv2.IMREAD_UNCHANGED)
-        t2 = cv2.imread(self.target2[index], cv2.IMREAD_UNCHANGED)
-        target = self.combine_multiple_targets(t1, t2)
+        
+        if self.combination_type == "STAPLE" : 
+            target = cv2.imread(self.staple_target[index], cv2.IMREAD_UNCHANGED)
+        else :
+            t1 = cv2.imread(self.target1[index], cv2.IMREAD_UNCHANGED)
+            t2 = cv2.imread(self.target2[index], cv2.IMREAD_UNCHANGED)
+            target = self.combine_multiple_targets(t1, t2)
+            
         if self.transforms is not None:
             augmented = self.transforms(image=img, mask=target)
             img = augmented['image']
@@ -136,55 +146,60 @@ class STAREDataset(VisionDataset):
             target = augmented['mask']
         return img, target
 
-    def combination_multiple_targets(self, t1, t2):
-        return combine_multiple_targets(t1, t2, self.combination_type)
+    def combine_multiple_targets(self, t1, t2):
+        if self.combination_type == "random":
+            target=[t1,t2][np.random.randint(2)]
+
+        elif self.combination_type == "union":
+            target=(t1+t2>0)*1
+    
+        elif self.combination_type == "intersection":
+            target=((t1==1) & (t2==1))*1
+
+        return target
+
 
 class ARIADataset(VisionDataset):
-    """ARIA dataset."""
-
-    def __init__(self, root: str="data/aria", transforms=None, combination_type="random", subset=None, green_only=True):
+    """ARIA retinography dataset
+    
+    Parameters
+    ----------
+    transforms
+        Applies to both image, mask and target segmentation mask (when available).
+    subset : slice
+        Subset of indices of the dataset we want to use.
+    green_only : bool
+        Only use the green channel (idx 1).
+    """
+    def __init__(self, root: str, transforms=None, combination_type="random", subset=None, green_only=True):
         super().__init__(root, transforms=transforms)
-        self._root_path = root
         self.images = sorted(glob.glob(os.path.join(root, "images/*.tif")))
         self.target1 = sorted(glob.glob(os.path.join(root, "annotation 1/*.tif")))
         self.target2 = sorted(glob.glob(os.path.join(root, "annotation 2/*.tif")))
+        self.staple_target = sorted(glob.glob(os.path.join(root, "STAPLE/*.png")))
         if subset is not None:
             self.images = self.images[subset]
             self.target1 = self.target1[subset]
             self.target2 = self.target2[subset]
+            self.staple_target = self.staple_target[subset]
         self.combination_type = combination_type
         self.green_only = green_only
-    
-    def _get_infos(self):
-        """Build a list that maps each img idx to corresponding
-        image file, annotations and fovea if available."""
-        self._data = []
-        for i, filename in enumerate(self.images):
-            # Extract info by looking at the filename
-            filename_parts_ = os.path.splitext(filename)[0].split("_")
-            file_type = filename_parts_[1]  # either 'a', 'c', or 'd'
-            # Tricky part is getting the fovea disc file
-            fovea_filename = os.path.splitext(filename)[0] + "_dfs.tif"
-            # add something like [0001] at the beginning if necessary
-            self._data.append({
-                "img": filename,
-                "t1": self.target1[i],
-                "t2": self.target2[i],
-                "disc": fovea_filename,
-                "file_type": file_type
-            })
-            
 
     def __len__(self):
         return len(self.images)
 
-    def __getitem__(self, idx):
-        img = cv2.cvtColor(cv2.imread(self._data[idx]['img']),
-                           cv2.COLOR_BGR2RGB)
+    def __getitem__(self, index):
+        img_path = self.images[index]
+        img = cv2.cvtColor(cv2.imread(img_path), cv2.COLOR_BGR2RGB)
         img = F.gamma_transform(img, GAMMA_CORRECTION)
-        t1 = cv2.imread(self._data[idx]['t1'], cv2.IMREAD_UNCHANGED)
-        t2 = cv2.imread(self._data[idx]['t2'], cv2.IMREAD_UNCHANGED)
-        target = self.combine_multiple_targets(t1, t2)
+        
+        if self.combination_type == "STAPLE" : 
+            target = cv2.imread(self.staple_target[index], cv2.IMREAD_UNCHANGED)
+        else :
+            t1 = cv2.imread(self.target1[index], cv2.IMREAD_UNCHANGED)
+            t2 = cv2.imread(self.target2[index], cv2.IMREAD_UNCHANGED)
+            target = self.combine_multiple_targets(t1, t2)
+            
         if self.transforms is not None:
             augmented = self.transforms(image=img, mask=target)
             img = augmented['image']

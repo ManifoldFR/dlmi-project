@@ -1,17 +1,24 @@
 import torch
 from torch.utils.data import ConcatDataset, DataLoader
-from utils.datasets import DriveDataset, STAREDataset
 from config import *
+from utils.datasets import DriveDataset, STAREDataset, ARIADataset
 
+# SUBSET_SLICE = slice(0, 15)
 # dataset_name = 'DRIVE'
 # train_dataset = DriveDataset("data/drive/training", subset=SUBSET_SLICE)
-dataset_name = 'STARE'
-train_dataset = STAREDataset("data/stare", subset=STARE_SUBSET_TRAIN)
+
+#dataset_name = 'STARE'
+#train_dataset = STAREDataset("data/stare", subset=SUBSET_SLICE)
+
+SUBSET_SLICE = slice(0, 107)
+dataset_name = 'ARIA'
+train_dataset = ARIADataset("data/aria", subset=SUBSET_SLICE)
 
 
 print(len(train_dataset))
 
-loader = DataLoader(train_dataset, batch_size=8, num_workers=1)
+#loader = DataLoader(train_dataset, batch_size=8, num_workers=1)
+loader = DataLoader(train_dataset, batch_size=8, num_workers=0)
 
 mean = 0.
 std = 0.
