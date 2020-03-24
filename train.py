@@ -208,7 +208,7 @@ if __name__ == "__main__":
             torch.save({
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
+                # 'optimizer_state_dict': optimizer.state_dict(),
                 'loss': loss,
                 'val_loss': val_loss,
                 'val_acc': val_acc,
