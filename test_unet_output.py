@@ -1,14 +1,15 @@
 """Sanity checks for things like dimensions etc"""
 import numpy as np
 import nets
-from utils.loaders import DATASET_MAP, train_transform
+from utils.loaders import get_datasets
 import torch.nn.functional as F
 
 
 def test_unet():
     net = nets.UNet(num_channels=1)
 
-    train_dataset = DATASET_MAP['DRIVE']['train']
+    sets_ = get_datasets('DRIVE')
+    train_dataset = sets_['train']
     train_dataset.return_mask = True  # override
     # tensors, supposedly
     img, mask, target = zip(*[train_dataset[i] for i in range(2)])
@@ -28,8 +29,8 @@ def test_unet():
     
     import matplotlib.pyplot as plt
     
-    mean_ = train_transform[-2].mean
-    std_ = train_transform[-2].std
+    mean_ = train_dataset.transforms[-2].mean
+    std_ = train_dataset.transforms[-2].std
     img = (std_[1] * img + mean_[1]).clamp(0, 1)
     img = np.moveaxis(img.numpy(), 0, -1)
     
