@@ -147,16 +147,7 @@ class STAREDataset(VisionDataset):
         return img, target
 
     def combine_multiple_targets(self, t1, t2):
-        if self.combination_type == "random":
-            target=[t1,t2][np.random.randint(2)]
-
-        elif self.combination_type == "union":
-            target=(t1+t2>0)*1
-    
-        elif self.combination_type == "intersection":
-            target=((t1==1) & (t2==1))*1
-
-        return target
+        return combine_multiple_targets(t1, t2, self.combination_type)
 
 
 class ARIADataset(VisionDataset):
@@ -171,7 +162,7 @@ class ARIADataset(VisionDataset):
     green_only : bool
         Only use the green channel (idx 1).
     """
-    def __init__(self, root: str, transforms=None, combination_type="random", subset=None, green_only=True):
+    def __init__(self, root: str="data/aria", transforms=None, combination_type="random", subset=None, green_only=True):
         super().__init__(root, transforms=transforms)
         self.images = sorted(glob.glob(os.path.join(root, "images/*.tif")))
         self.target1 = sorted(glob.glob(os.path.join(root, "annotation 1/*.tif")))
