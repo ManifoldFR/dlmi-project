@@ -2,6 +2,9 @@ import torch
 from torch import nn, Tensor
 from torchvision.ops import DeformConv2d
 
+# antialiased max pooling operator
+from kornia.contrib import MaxBlurPool2d
+
 
 class BasicDeformConv2d(nn.Module):
     """Basic deformable Conv2d block, with offset computed from learnable Conv2d layer.
@@ -70,7 +73,7 @@ class _DownBlock(nn.Module):
     Downsamples using MaxPooling then applies ConvBlock.
     """
 
-    def __init__(self, in_channels, out_channels, n_convs=2):
+    def __init__(self, in_channels, out_channels, n_convs=2, antialias=False):
         super().__init__()
         layers = [
             ConvBlock(in_channels, out_channels)
@@ -79,11 +82,15 @@ class _DownBlock(nn.Module):
             for _ in range(n_convs-1)
         ]
         # maxpooling over patches of size 2
-        self.mp = nn.MaxPool2d(2)
+        if not antialias:
+            self.mp = nn.MaxPool2d(kernel_size=2)  # stride is equal to kernel_size (2)
+        else:
+            self.mp = MaxBlurPool2d(kernel_size=2)  # ceil mode for consistency
+            self.mp.padding = (1, 1)  # fix some odd problem with dimensionality
         self.conv = nn.Sequential(*layers)
 
-    def forward(self, x: Tensor) -> Tensor:
-        x = self.mp(x)
+    def forward(self, input: Tensor) -> Tensor:
+        x = self.mp(input)
         x = self.conv(x)
         return x
 
@@ -117,7 +124,10 @@ class _UpBlock(nn.Module):
                                          2, stride=2)
 
     def forward(self, x: Tensor, skip: Tensor) -> Tensor:
-        z = torch.cat((skip, x), dim=1)
+        try:
+            z = torch.cat((skip, x), dim=1)
+        except:
+            import ipdb; ipdb.set_trace()
         z = self.conv(z)
         out = self.upconv(z)  # deconvolve
         return out
@@ -129,7 +139,7 @@ class UNet(nn.Module):
     See https://arxiv.org/pdf/1505.04597.pdf 
     """
 
-    def __init__(self, num_channels: int=3, num_classes: int=2):
+    def __init__(self, num_channels: int=3, num_classes: int=2, antialias=False):
         """Initialize a U-Net.
         
         Parameters
@@ -142,18 +152,19 @@ class UNet(nn.Module):
         super().__init__()
         self.num_channels = num_channels
         self.num_classes = num_classes
+        self.antialias = antialias
 
         self.in_conv = nn.Sequential(
             ConvBlock(num_channels, 64),
             ConvBlock(64, 64)
         )
 
-        self.down1 = _DownBlock(64, 128)
-        self.down2 = _DownBlock(128, 256)
-        self.down3 = _DownBlock(256, 512)
+        self.down1 = _DownBlock(64, 128, antialias=self.antialias)
+        self.down2 = _DownBlock(128, 256, antialias=self.antialias)
+        self.down3 = _DownBlock(256, 512, antialias=self.antialias)
 
         self.center = nn.Sequential(
-            _DownBlock(512, 1024),
+            _DownBlock(512, 1024, antialias=self.antialias),
             nn.ConvTranspose2d(1024, 512, 2, stride=2)  # upscale
         )
 
@@ -243,7 +254,8 @@ class AttentionUNet(nn.Module):
     and original implementation at https://github.com/ozan-oktay/Attention-Gated-Networks.
     """
 
-    def __init__(self, num_channels: int=3, num_classes: int=2, gate_feat_dims: list = None):
+    def __init__(self, num_channels: int=3, num_classes: int=2, gate_feat_dims: list = None,
+                 antialias: bool=False):
         """
         
         Parameters
@@ -260,18 +272,19 @@ class AttentionUNet(nn.Module):
         super().__init__()
         self.num_channels = num_channels
         self.num_classes = num_classes
+        self.antialias = antialias
         
         self.in_conv = nn.Sequential(
             ConvBlock(num_channels, 64),
             ConvBlock(64, 64)
         )
 
-        self.down1 = _DownBlock(64, 128)
-        self.down2 = _DownBlock(128, 256)
-        self.down3 = _DownBlock(256, 512)
+        self.down1 = _DownBlock(64, 128, antialias=self.antialias)
+        self.down2 = _DownBlock(128, 256, antialias=self.antialias)
+        self.down3 = _DownBlock(256, 512, antialias=self.antialias)
 
         self.center = nn.Sequential(
-            _DownBlock(512, 1024),
+            _DownBlock(512, 1024, antialias=self.antialias),
             nn.ConvTranspose2d(1024, 512, 2, stride=2)  # upscale
         )
 

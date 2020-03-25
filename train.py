@@ -16,6 +16,7 @@ from utils.plot import plot_prediction
 from utils.loaders import denormalize, get_datasets
 
 import config
+from config import MODEL_KWARGS
 
 
 
@@ -137,15 +138,17 @@ if __name__ == "__main__":
     print("Using device %s" % device)
     args = parser.parse_args()
     
+    _kwargs = MODEL_KWARGS.copy()
+    
+    
     EPOCHS = args.epochs
     BATCH_SIZE = args.batch_size
     
     print("Training model %s" % args.model)
     
-
     # Make model
     model_class = MODEL_DICT[args.model]
-    model = model_class(num_classes=2, num_channels=1)  # binary classification
+    model = model_class(num_classes=2, **_kwargs)  # binary classification
     model = model.to(device)
     
     # Define optimizer and metrics
