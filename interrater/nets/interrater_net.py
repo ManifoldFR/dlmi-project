@@ -1,8 +1,9 @@
 import torch
 from torch import nn, Tensor
 import numpy as np
-from interrater.config import *
+import torch.nn.functional as F
 
+print("READ NET\n")
 
 class ConvBlock(nn.Module):
     """Basic convolutional block."""
@@ -58,7 +59,7 @@ class InterraterNet(nn.Module):
     """Interrater network
     """
 
-    def __init__(self, num_channels: int=3):
+    def __init__(self, num_channels: int=3, interpolate_dim: int=12800):
         """Initialize a U-Net.
         
         Parameters
@@ -69,6 +70,7 @@ class InterraterNet(nn.Module):
         """
         super().__init__()
         self.num_channels = num_channels
+        self.interpolate_dim = interpolate_dim
 
         self.in_conv = nn.Sequential(
             ConvBlock(num_channels, 64),
@@ -79,6 +81,7 @@ class InterraterNet(nn.Module):
         self.down2 = _DownBlock(128, 256)
         self.down3 = _DownBlock(256, 512)
 
+        self.fc = nn.Linear(self.interpolate_dim ,1)
 
     def forward(self, x: Tensor):
         x1 = self.in_conv(x.float())  # 64 * 1. * 1. ie 224
@@ -86,10 +89,10 @@ class InterraterNet(nn.Module):
         x3 = self.down2(x2)  # 256 * 1/4 * 1/4
         x4 = self.down3(x3)  # 512 * 1/8 * 1/8
         x4_flatten = x4.view(1, x4.size()[0], -1)
-        dim=int(x4.size()[1]*x4.size()[2]*x4.size()[3])
-        out = nn.Linear(dim, 1)(x4_flatten)
+        print("flatten size", x4_flatten.size())
+        x4_interpolate = F.interpolate(input = x4_flatten, size = self.interpolate_dim)
+        out = self.fc(x4_interpolate)
         out = out.view(x4.size()[0])
-
         return out
     
 

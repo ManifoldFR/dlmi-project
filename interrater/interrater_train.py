@@ -1,5 +1,7 @@
 import argparse
 import os
+os.chdir("C:/Users/Philo/Documents/3A -- MVA/DL for medical imaging/retine/dlmi-project")
+
 
 import datetime
 import numpy as np
@@ -12,12 +14,16 @@ from torch.utils.data import DataLoader
 #from ignite.contrib.metrics import regression as regmetrics
 import sklearn.metrics as skm
 
-from interrater.nets.interrater_net import InterraterNet
-from interrater.nets import MODEL_DICT
-from interrater.utils.loaders import DATASET_MAP
 
+#from interrater.config import *
+from interrater.config import lr, epochs, batch_size, model, loss, validate_every
+from interrater.config import dataset, transforms_name, interrater_metrics, test_in_train
+from interrater.utils.loaders import *
+from interrater.nets import *
+#from interrater.utils.loaders import DATASET_MAP
+#from interrater.nets import InterraterNet
+#from interrater.nets import MODEL_DICT
 from interrater.utils.plot import *
-from interrater.config import *
 
 
 torch.random.manual_seed(0)
@@ -28,18 +34,18 @@ LOSSES_DICT = {
     "MSE": nn.MSELoss()
 }
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--model", type=str, choices=list(MODEL_DICT.keys()),
-                    required=True)
-parser.add_argument("--loss", type=str, choices=list(LOSSES_DICT.keys()),
-                    default="MSE")
-parser.add_argument("--dataset", default="STARE", type=str,
-                    help="Specify the dataset.")
-parser.add_argument("--validate-every", "-ve", default=4, type=int,
-                    help="Validate every X epochs (default %(default)d)")
-parser.add_argument("--epochs", "-E", default=40, type=int)
-parser.add_argument("--batch-size", "-B", default=1, type=int)
-parser.add_argument("--lr", "-lr", default=2e-5, type=float)
+#parser = argparse.ArgumentParser()
+#parser.add_argument("--model", type=str, choices=list(MODEL_DICT.keys()),
+#                    required=True)
+#parser.add_argument("--loss", type=str, choices=list(LOSSES_DICT.keys()),
+#                    default="MSE")
+#parser.add_argument("--dataset", default="STARE", type=str,
+#                    help="Specify the dataset.")
+#parser.add_argument("--validate-every", "-ve", default=4, type=int,
+#                    help="Validate every X epochs (default %(default)d)")
+#parser.add_argument("--epochs", "-E", default=40, type=int)
+#parser.add_argument("--batch-size", "-B", default=1, type=int)
+#parser.add_argument("--lr", "-lr", default=2e-5, type=float)
 
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -51,6 +57,8 @@ def train(model, loader: torch.utils.data.DataLoader, criterion, metric, optimiz
     all_acc = dict()
     for key in metric:
         all_acc[key] = []
+    targets_ = []
+    outputs_ = []
     
     iterator = tqdm.tqdm(enumerate(loader), desc='Training epoch {:d}'.format(epoch))
     for idx, (img, target) in iterator:
@@ -58,18 +66,22 @@ def train(model, loader: torch.utils.data.DataLoader, criterion, metric, optimiz
         target = target.to(device)
         output = model(img)
         loss = criterion(output, target)
+        print("train it")
+        print(target)
+        print(output)
+        print(loss)
         
         loss.backward()
         optimizer.step()
         optimizer.zero_grad()
         
         all_loss.append(loss.item())
+        targets_ = targets_ + list(target.detach().numpy())
+        outputs_ = outputs_ + list(output.detach().numpy())
         
-        for key in metric:
-            target_np = target.detach().numpy()
-            output_np = output.detach().numpy()
-            acc = metric[key](output_np, target_np)
-            all_acc[key].append(acc)
+    for key in metric:
+        acc = metric[key](np.array(targets_), np.array(outputs_))
+        all_acc[key].append(acc)
     
     mean_loss = np.mean(all_loss)
     return mean_loss, {key: np.mean(a) for key, a in all_acc.items()}
@@ -97,21 +109,20 @@ def validate(model, loader, criterion, metric):
             target = target.to(device)
             output = model(img)
             loss = criterion(output, target)
-            all_loss.append(loss.item())
+            print("val it")
+            print(target)
+            print(output)
+            print(loss)
             
-            for key in metric:
-                target_np = target.detach().numpy()
-                output_np = output.detach().numpy()
-                acc = metric[key](output_np, target_np)
-#                all_acc[key].append(acc.item())
-                all_acc[key].append(acc)
+            all_loss.append(loss.item())
             # Store the img, target, prediction for plotting
             imgs_.append(img)
-            targets_.append(target)
-            outputs_.append(output)
-        imgs_ = torch.cat(imgs_)
-        targets_ = torch.cat(targets_)
-        outputs_ = torch.cat(outputs_)
+            targets_ = targets_ + list(target.detach().numpy())
+            outputs_ = outputs_ + list(output.detach().numpy())
+        
+        for key in metric:
+            acc = metric[key](np.array(targets_), np.array(outputs_))
+            all_acc[key].append(acc)
         
         mean_loss = np.mean(all_loss)
         
@@ -135,7 +146,7 @@ if test_in_train == True :
     ##++ to modify
     ##++##++##++##++##++##++##++##++##++##++##++
     model = model_class(num_channels=1)  
-#    model = model.to(device)
+    model = model.to(device)
     
     # Define optimizer and metrics
     print("Learning rate: {:.3g}".format(lr))
@@ -146,8 +157,7 @@ if test_in_train == True :
         "mse" : skm.mean_squared_error,
         "mae" : skm.mean_absolute_error,
         "max_error" : skm.max_error,
-        "explained_var_score" : skm.explained_variance_score,
-#        "r2" : skm.r2_score
+        "explained_var_score" : skm.explained_variance_score
     }
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.8)
 
@@ -175,9 +185,6 @@ if test_in_train == True :
             val_loss, val_acc, val_detail = validate(model, val_loader, criterion, metric_dict)
             print("Epoch {:d}: Train loss {:.3g} -- MAE {:.3g} | Validation loss {:.3g} -- MAE {:.3g}".format(
                 epoch, loss, acc["mae"], val_loss, val_acc["mae"]))
-#            print("val detail\n")
-#            print(val_detail["targets"])
-#            print(val_detail["outputs"])
             save_perf["val_loss"].append(val_loss)
             save_perf["val_acc"].append(val_acc)
             save_perf["val_details"].append(val_detail)
@@ -273,10 +280,34 @@ if test_in_train == True :
 #            }, save_path)
 
 
+print("Final train loss : ", save_perf["train_loss"][epochs-1])
+print("Final valid loss : ", save_perf["val_loss"][epochs-1])
+print("Ratio between valid and train loss : ", save_perf["val_loss"][epochs-1]/save_perf["train_loss"][epochs-1])
 
-plot_loss(save_perf, epochs, validate_every, save = True, name= "plot_loss", root = "figures")
-plot_metrics("mae",save_perf, epochs, validate_every, save = True, name= "plot_metric", root = "figures")
-plot_metrics("max_error",save_perf, epochs, validate_every, save = True, name= "plot_metric", root = "figures")
+
+### Plot results
+#start_ep = 1
+#plot_loss(save_perf, epochs, validate_every, start_at_epoch = start_ep, save = False, name= "plot_loss", root = "figures")
+#plot_metrics("mae",save_perf, epochs, validate_every, start_at_epoch = start_ep, save = False, name= "plot_metric", root = "figures")
+#plot_metrics("max_error",save_perf, epochs, validate_every, start_at_epoch = start_ep, save = False, name= "plot_metric", root = "figures")
+#plot_target_output(save_perf, metric = interrater_metrics, save = False, name= "plot_target_output", root = "figures")
+
+## Check target VS initial target 
+#target = save_perf["val_details"][epochs-1]["targets"]
+#output = save_perf["val_details"][epochs-1]["outputs"]
+#print("target : ", target)
+#print("output : ", output)
+#
+#
+#print("interrater metrics in train file : ",interrater_metrics)
+
+
+#import pickle as pkl
+#target_dict = pkl.load(open(os.path.join("data", "interrater_data",'dict_interrater.pkl'), 'rb'))
+#target_dict["stare"][interrater_metrics]
+
+
+
 
 
 

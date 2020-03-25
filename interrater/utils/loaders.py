@@ -2,10 +2,11 @@
 import torch
 import cv2
 
-
-#from config import STARE_SUBSET_TRAIN, STARE_SUBSET_VAL
-
-from interrater.config import *
+#from interrater.config import *
+from interrater.config import interrater_metrics, transforms_name
+from interrater.config import STARE_SUBSET_TRAIN, STARE_SUBSET_VAL
+from interrater.config import ARIA_SUBSET_TRAIN, ARIA_SUBSET_VAL
+from interrater.config import SIZE, MAX_SIZE
 from interrater.utils.datasets import STAREDataset
 
 from albumentations import Compose, Resize, RandomSizedCrop
@@ -13,13 +14,16 @@ from albumentations import OneOf, Rotate, GaussianBlur, CLAHE
 from albumentations import VerticalFlip, HorizontalFlip, Resize, Normalize
 from albumentations.pytorch import ToTensorV2 as ToTensor
 
+import json
 
 #os.chdir("C:/Users/Philo/Documents/3A -- MVA/DL for medical imaging/retine/dlmi-project/interrater")
 #os.getcwd()
 
-# just to handle memory issues
-SIZE = int(320/8)
-MAX_SIZE = int(448/8)
+
+print("READ LOADER\n")
+print("interrater metrics in loaders : ", interrater_metrics)
+
+
 
 #SIZE = 320
 #MAX_SIZE = 448
@@ -41,9 +45,14 @@ def make_train_transform(mean=0, std=1):
     ])
     return _train
 
+
 def make_basic_train_transform(mean=0, std=1):
-#    print("\nbasic transform\n")
+    print("\nbasic transform\n")
     _train = Compose([
+        OneOf([
+            RandomSizedCrop((MAX_SIZE, MAX_SIZE), SIZE, SIZE, p=.8),
+            Resize(SIZE, SIZE, p=.2),
+        ], p=1),
         CLAHE(always_apply=True),
         Normalize(mean, std, always_apply=True),
         ToTensor(always_apply=True)
@@ -54,8 +63,6 @@ def make_basic_train_transform(mean=0, std=1):
 
 ## Use the mean and std values recorded in the JSON file !
 # Default train transform converts to Tensor
-
-import json
 
 with open("dataset_statistics.json") as f:
     statistics_ = json.load(f)

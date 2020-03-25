@@ -1,19 +1,19 @@
 import os.path
 import pdb
-import glob
 import torch
 import numpy as np
 import cv2
-try : 
-    from config import GAMMA_CORRECTION
-except :
-    GAMMA_CORRECTION = 1.2
-import imageio
+from interrater.config import GAMMA_CORRECTION
+#try : 
+#    from interrater.config import GAMMA_CORRECTION
+#except :
+#    GAMMA_CORRECTION = 1.2
 from torch.utils.data import Dataset
 from torchvision.datasets import VisionDataset
 import albumentations.augmentations.functional as F
 import pickle as pkl
 
+print("READ DATASETS\n")
 
 class STAREDataset(VisionDataset):
     """STARE (STructured Analysis of the Retina) retinography dataset
@@ -30,15 +30,16 @@ class STAREDataset(VisionDataset):
     green_only : bool
         Only use the green channel (idx 1).
     """
-    def __init__(self, root: str, transforms=None, metrics = "IoU", subset=None, green_only=True):
+    def __init__(self, root: str, transforms=None, metrics = None, subset=None, green_only=True):
         super().__init__(root, transforms=transforms)
         self.target_dict = pkl.load(open(os.path.join(root, "interrater_data",'dict_interrater.pkl'), 'rb'))
-#        self.images = sorted(glob.glob(os.path.join(root, "stare/images/*.png")))
+#       # only load images for which annotation is available
         self.images = [os.path.join(root,"stare", "images", str(r+".ppm")) for r in list(self.target_dict["stare"]["file_img"])]
         
         # load as tensor the list of interrater metrics for each image
         self.target = torch.tensor(self.target_dict["stare"][metrics])
         
+        # Check length of target and image match
         assert len(self.images) == len(self.target)
         
         if subset is not None:
