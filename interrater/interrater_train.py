@@ -16,13 +16,13 @@ import sklearn.metrics as skm
 
 
 #from interrater.config import *
-from interrater.config import lr, epochs, batch_size, model, loss, validate_every
+from interrater.config import lr, epochs, batch_size, model, loss, validate_every, num_pool
 from interrater.config import dataset, transforms_name, interrater_metrics, test_in_train
 from interrater.utils.loaders import *
-from interrater.nets import *
+#from interrater.nets import *
 #from interrater.utils.loaders import DATASET_MAP
 #from interrater.nets import InterraterNet
-#from interrater.nets import MODEL_DICT
+from interrater.nets import MODEL_DICT
 from interrater.utils.plot import *
 
 
@@ -66,10 +66,10 @@ def train(model, loader: torch.utils.data.DataLoader, criterion, metric, optimiz
         target = target.to(device)
         output = model(img)
         loss = criterion(output, target)
-        print("train it")
-        print(target)
-        print(output)
-        print(loss)
+#        print("train it")
+#        print(target)
+#        print(output)
+#        print(loss)
         
         loss.backward()
         optimizer.step()
@@ -109,10 +109,10 @@ def validate(model, loader, criterion, metric):
             target = target.to(device)
             output = model(img)
             loss = criterion(output, target)
-            print("val it")
-            print(target)
-            print(output)
-            print(loss)
+#            print("val it")
+#            print(target)
+#            print(output)
+#            print(loss)
             
             all_loss.append(loss.item())
             # Store the img, target, prediction for plotting
@@ -145,9 +145,11 @@ if test_in_train == True :
     ##++##++##++##++##++##++##++##++##++##++##++
     ##++ to modify
     ##++##++##++##++##++##++##++##++##++##++##++
-    model = model_class(num_channels=1)  
+    if model == "Interraternet_pool" : 
+        model = model_class(num_pool = num_pool, num_channels=1)  
+    else :
+        model = model_class(num_channels=1)  
     model = model.to(device)
-    
     # Define optimizer and metrics
     print("Learning rate: {:.3g}".format(lr))
     print("Using loss {:s}".format(loss))
@@ -286,11 +288,11 @@ print("Ratio between valid and train loss : ", save_perf["val_loss"][epochs-1]/s
 
 
 ### Plot results
-#start_ep = 1
-#plot_loss(save_perf, epochs, validate_every, start_at_epoch = start_ep, save = False, name= "plot_loss", root = "figures")
-#plot_metrics("mae",save_perf, epochs, validate_every, start_at_epoch = start_ep, save = False, name= "plot_metric", root = "figures")
-#plot_metrics("max_error",save_perf, epochs, validate_every, start_at_epoch = start_ep, save = False, name= "plot_metric", root = "figures")
-#plot_target_output(save_perf, metric = interrater_metrics, save = False, name= "plot_target_output", root = "figures")
+start_ep = 5
+plot_loss(save_perf, epochs, validate_every, start_at_epoch = start_ep, save = False, name= "plot_loss", root = "figures")
+plot_metrics("mae",save_perf, epochs, validate_every, start_at_epoch = start_ep, save = False, name= "plot_metric", root = "figures")
+plot_metrics("max_error",save_perf, epochs, validate_every, start_at_epoch = start_ep, save = False, name= "plot_metric", root = "figures")
+plot_target_output(save_perf, metric = interrater_metrics, save = False, name= "plot_target_output", root = "figures")
 
 ## Check target VS initial target 
 #target = save_perf["val_details"][epochs-1]["targets"]

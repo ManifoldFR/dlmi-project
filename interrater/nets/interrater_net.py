@@ -95,12 +95,197 @@ class InterraterNet(nn.Module):
         out = out.view(x4.size()[0])
         return out
     
+    
+class InterraterNet2(nn.Module):
+    """Interrater network
+    """
+
+    def __init__(self, num_channels: int=3, interpolate_dim: int=12800):
+        """Initialize a U-Net.
+        
+        Parameters
+        ----------
+        num_channels : int
+            Number of input channels.
+
+        """
+        super().__init__()
+        self.num_channels = num_channels
+        self.interpolate_dim = interpolate_dim
+
+        self.in_conv = nn.Sequential(
+            ConvBlock(num_channels, 64),
+            ConvBlock(64, 64)
+        )
+
+        self.down1 = _DownBlock(64, 128)
+        self.down2 = _DownBlock(128, 256)
+        self.down3 = _DownBlock(256, 512)
+
+        self.mp = nn.MaxPool1d(kernel_size = 2)
+        self.fc = nn.Linear(int(self.interpolate_dim /2),1)
+
+    def forward(self, x: Tensor):
+        x1 = self.in_conv(x.float())  # 64 * 1. * 1. ie 224
+        x2 = self.down1(x1)  # 128 * 1/2 * 1/2
+        x3 = self.down2(x2)  # 256 * 1/4 * 1/4
+        x4 = self.down3(x3)  # 512 * 1/8 * 1/8
+        x4_flatten = x4.view(1, x4.size()[0], -1)
+        x4_interpolate = F.interpolate(input = x4_flatten, size = self.interpolate_dim)
+
+        x5 = self.mp(x4_interpolate)
+        out = self.fc(x5)
+        out = out.view(x4.size()[0])
+        return out
+    
+    
+class InterraterNet3(nn.Module):
+    """Interrater network
+    """
+
+    def __init__(self, num_channels: int=3, interpolate_dim: int=12800):
+        """Initialize a U-Net.
+        
+        Parameters
+        ----------
+        num_channels : int
+            Number of input channels.
+
+        """
+        super().__init__()
+        self.num_channels = num_channels
+        self.interpolate_dim = interpolate_dim
+
+        self.in_conv = nn.Sequential(
+            ConvBlock(num_channels, 64),
+            ConvBlock(64, 64)
+        )
+
+        self.down1 = _DownBlock(64, 128)
+        self.down2 = _DownBlock(128, 256)
+        self.down3 = _DownBlock(256, 512)
+
+        self.mp = nn.MaxPool1d(kernel_size = 2)
+        self.fc = nn.Linear(int(self.interpolate_dim /4),1)
+
+    def forward(self, x: Tensor):
+        x1 = self.in_conv(x.float())  # 64 * 1. * 1. ie 224
+        x2 = self.down1(x1)  # 128 * 1/2 * 1/2
+        x3 = self.down2(x2)  # 256 * 1/4 * 1/4
+        x4 = self.down3(x3)  # 512 * 1/8 * 1/8
+        x4_flatten = x4.view(1, x4.size()[0], -1)
+        x4_interpolate = F.interpolate(input = x4_flatten, size = self.interpolate_dim)
+
+        x5 = self.mp(x4_interpolate)
+        x6 = self.mp(x5)
+        
+        out = self.fc(x6)
+        
+        out = out.view(x4.size()[0])
+        return out
+    
+
+class InterraterNet4(nn.Module):
+    """Interrater network
+    """
+
+    def __init__(self, num_channels: int=3, interpolate_dim: int=12800):
+        """Initialize a U-Net.
+        
+        Parameters
+        ----------
+        num_channels : int
+            Number of input channels.
+
+        """
+        super().__init__()
+        self.num_channels = num_channels
+        self.interpolate_dim = interpolate_dim
+
+        self.in_conv = nn.Sequential(
+            ConvBlock(num_channels, 64),
+            ConvBlock(64, 64)
+        )
+
+        self.down1 = _DownBlock(64, 128)
+        self.down2 = _DownBlock(128, 256)
+        self.down3 = _DownBlock(256, 512)
+
+        self.mp = nn.MaxPool1d(kernel_size = 2)
+#        self.mp = nn.AvgPool1d(kernel_size = 2)
+        self.fc = nn.Linear(int(self.interpolate_dim /8),1)
+
+    def forward(self, x: Tensor):
+        x1 = self.in_conv(x.float())  # 64 * 1. * 1. ie 224
+        x2 = self.down1(x1)  # 128 * 1/2 * 1/2
+        x3 = self.down2(x2)  # 256 * 1/4 * 1/4
+        x4 = self.down3(x3)  # 512 * 1/8 * 1/8
+        x4_flatten = x4.view(1, x4.size()[0], -1)
+        x4_interpolate = F.interpolate(input = x4_flatten, size = self.interpolate_dim)
+
+        x5 = self.mp(x4_interpolate)
+        x6 = self.mp(x5)
+        x7 = self.mp(x6)
+        
+        out = self.fc(x7)
+        
+        out = out.view(x4.size()[0])
+        return out
 
 
+class InterraterNet_pool(nn.Module):
+    """Interrater network
+    """
 
+    def __init__(self, num_pool: int=3, num_channels: int=3, interpolate_dim: int=12800):
+        """Initialize a U-Net.
+        
+        Parameters
+        ----------
+        num_channels : int
+            Number of input channels.
 
+        """
+        super().__init__()
+        self.interpolate_dim = interpolate_dim
 
+        self.in_conv = nn.Sequential(
+            ConvBlock(num_channels, 64),
+            ConvBlock(64, 64)
+        )
 
+        self.down1 = _DownBlock(64, 128)
+        self.down2 = _DownBlock(128, 256)
+        self.down3 = _DownBlock(256, 512)
+        
+        # Max pooling
+#        layers = [ nn.MaxPool1d(kernel_size = 2) for _ in range(num_pool) ]
+        layers = [
+            nn.MaxPool1d(kernel_size = 2)
+        ] + [
+            nn.MaxPool1d(kernel_size = 2)
+            for _ in range(num_pool-1)
+        ]
+        self.mp = nn.Sequential(*layers)
+#        self.mp = nn.MaxPool1d(kernel_size = 2)
+#        self.mp = nn.AvgPool1d(kernel_size = 2)
+        
+        self.fc = nn.Linear(int(self.interpolate_dim /(2**(num_pool))),1)
+
+    def forward(self, x: Tensor):
+        x1 = self.in_conv(x.float())  # 64 * 1. * 1. ie 224
+        x2 = self.down1(x1)  # 128 * 1/2 * 1/2
+        x3 = self.down2(x2)  # 256 * 1/4 * 1/4
+        x4 = self.down3(x3)  # 512 * 1/8 * 1/8
+        x4_flatten = x4.view(1, x4.size()[0], -1)
+        x4_interpolate = F.interpolate(input = x4_flatten, size = self.interpolate_dim)
+
+        x5 = self.mp(x4_interpolate)
+        
+        out = self.fc(x5)
+        
+        out = out.view(x4.size()[0])
+        return out
 
 
 
