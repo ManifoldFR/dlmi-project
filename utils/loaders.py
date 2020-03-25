@@ -2,7 +2,7 @@
 import torch
 import cv2
 
-from utils.datasets import DriveDataset, STAREDataset
+from utils.datasets import DriveDataset, STAREDataset, ARIADataset
 from config import *
 
 from albumentations import Compose, Resize, RandomSizedCrop
@@ -90,5 +90,11 @@ DATASET_MAP = {
                               combination_type="random", subset=STARE_SUBSET_TRAIN),
         "val": STAREDataset("data/stare", transforms=train_transform,
                               combination_type="random", subset=STARE_SUBSET_VAL)
+    },
+    "ARIA": {
+    "train": STAREDataset("data/aria", transforms=train_transform,
+                          combination_type="random", subset=ARIA_SUBSET_TRAIN),
+    "val": STAREDataset("data/aria", transforms=train_transform,
+                          combination_type="random", subset=ARIA_SUBSET_VAL)
     }
 }
