@@ -206,14 +206,13 @@ class AttentionGate(nn.Module):
         self.gate_channels = gate_channels
         self.int_channels = int_channels
         
-        self.gate_conv = nn.Conv2d(gate_channels, int_channels, kernel_size=1,
-                                   bias=False)
+        self.gate_conv = nn.Conv2d(gate_channels, int_channels, kernel_size=1, bias=False)
         self.gate_bn = nn.BatchNorm2d(int_channels)
         self.feat_conv = nn.Conv2d(feat_channels, int_channels, kernel_size=1)
         self.feat_bn = nn.BatchNorm2d(int_channels)
 
         self.alpha_conv = nn.Conv2d(int_channels, 1, kernel_size=1)
-        self.activation = nn.Softmax(dim=1)
+        self.activation = nn.Sigmoid()
 
     def forward(self, g: Tensor, x: Tensor) -> Tensor:
         """
@@ -229,8 +228,9 @@ class AttentionGate(nn.Module):
         Attention map alpha.
         """
         g = self.gate_bn(self.gate_conv(g))
-        xp = self.feat_bn(self.feat_conv(x))
-        z = torch.relu(g + xp, inplace=True)
+        x = self.feat_bn(self.feat_conv(x))
+        z = g + x
+        z = torch.relu(z)
         z = self.alpha_conv(z)
         alpha = self.activation(z)
         return alpha
@@ -302,7 +302,7 @@ class AttentionUNet(nn.Module):
         x3 = self.down2(x2)  # 256 * 1/4 * 1/4
         x4 = self.down3(x3)  # 512 * 1/8 * 1/8
         x = self.center(x4)  # 512 * 1/8 * 1/8
-        alp1 = self.att1(x, x4)
+        alp1 = self.att1(x4, x4)
         x = self.up1(x, alp1 * x4)  # 256 * 1/4 * 1/4
         alp2 = self.att2(x, x3)
         x = self.up2(x, alp2 * x3)  # 128 * 1/2 * 1/2

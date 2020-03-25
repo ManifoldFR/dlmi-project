@@ -13,7 +13,7 @@ from nets.unet import AttentionUNet, UNet
 from nets import MODEL_DICT
 from utils import losses, metrics
 from utils.plot import plot_prediction
-from utils.loaders import DATASET_MAP, denormalize
+from utils.loaders import denormalize, get_datasets
 
 import config
 
@@ -21,7 +21,7 @@ import config
 
 LOSSES_DICT = {
     "crossentropy": nn.CrossEntropyLoss(),
-    "dice": losses.soft_dice_loss,
+    "dice": losses.DiceLoss(variant='soft'),  # we use the soft Dice by default
     "iou": losses.soft_iou_loss,
     "focal": losses.focal_loss,
     "combined": losses.CombinedLoss()
@@ -163,15 +163,16 @@ if __name__ == "__main__":
 
     # Define dataset
     DATASET = args.dataset
-    train_dataset = DATASET_MAP[DATASET]['train']
-    val_dataset = DATASET_MAP[DATASET]['val']
-    
+    dsets_ = get_datasets(DATASET)
+    train_dataset, val_dataset = dsets_['train'], dsets_['val']
+
     # Define TensorBoard summary
     comment = "{:s}-{:s}-BatchNorm-{:s}Loss".format(
         DATASET, args.model, args.loss)
     if args.extra_tag is not None:
         comment += "-{:s}".format(args.extra_tag)
     writer = SummaryWriter(comment=comment)
+    
     
     # Define loaders
     train_loader = DataLoader(train_dataset, BATCH_SIZE, shuffle=True)

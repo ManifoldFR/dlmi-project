@@ -72,3 +72,15 @@ python utils/loaders.py
 ```
 
 The data augmentation can be visualized in a [notebook](augmentations-demo.ipynb).
+
+
+## Visualization
+
+### Attention maps
+
+The Attention U-Net model has attention maps that can be directly interpreted using the following script:
+```bash
+python visualize_attention.py --img-path path/to/img --weights path/to/model
+```
+check `python visualize_attention.py -h` for options.
+

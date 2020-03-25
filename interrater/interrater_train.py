@@ -288,11 +288,11 @@ print("Ratio between valid and train loss : ", save_perf["val_loss"][epochs-1]/s
 
 
 ### Plot results
-start_ep = 5
+start_ep = 3
 plot_loss(save_perf, epochs, validate_every, start_at_epoch = start_ep, save = False, name= "plot_loss", root = "figures")
-plot_metrics("mae",save_perf, epochs, validate_every, start_at_epoch = start_ep, save = False, name= "plot_metric", root = "figures")
-plot_metrics("max_error",save_perf, epochs, validate_every, start_at_epoch = start_ep, save = False, name= "plot_metric", root = "figures")
-plot_target_output(save_perf, metric = interrater_metrics, save = False, name= "plot_target_output", root = "figures")
+#plot_metrics("mae",save_perf, epochs, validate_every, start_at_epoch = start_ep, save = False, name= "plot_metric", root = "figures")
+#plot_metrics("max_error",save_perf, epochs, validate_every, start_at_epoch = start_ep, save = False, name= "plot_metric", root = "figures")
+#plot_target_output(save_perf, metric = interrater_metrics, save = False, name= "plot_target_output", root = "figures")
 
 ## Check target VS initial target 
 #target = save_perf["val_details"][epochs-1]["targets"]

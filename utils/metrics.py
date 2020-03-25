@@ -25,7 +25,7 @@ def iou_pytorch(outputs: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
 
     # We smooth our devision to avoid 0/0
     iou = (intersection + EPSILON) / (union + EPSILON)
-    return iou
+    return iou.mean()
 
 
 def dice_score(input: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
@@ -41,7 +41,7 @@ def dice_score(input: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
 
     # We smooth our devision to avoid 0/0
     dice = 2 * intersection / (im_sum + EPSILON)
-    return dice
+    return dice.mean()
 
 def accuracy(input: torch.Tensor, labels: torch.Tensor) -> float:
     input = input.flatten().detach().cpu().numpy()

@@ -46,19 +46,16 @@ MAX_SIZE = int(448/ratio)
 ### Training params
 #epochs = 40
 #epochs = 21
-epochs = 15
-#epochs = 4
+#epochs = 15
+epochs = 4
 #epochs = 10
 #batch_size = 5
 batch_size = 2
 #batch_size = 1
 
 #model = "InterraterNet"
-#model = "InterraterNet2"
-#model = "InterraterNet3"
-#model = "InterraterNet4"
 model = "InterraterNet_pool"
-num_pool = 1
+num_pool = 4
 
 #lr = 1
 lr = 1e-1

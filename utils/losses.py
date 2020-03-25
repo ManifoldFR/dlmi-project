@@ -6,6 +6,49 @@ from torch.nn import functional as F
 EPSILON = 1e-8
 
 
+class DiceLoss(nn.Module):
+    """
+    
+    Attributes
+    ----------
+    soft : bool
+        Variant of the Dice loss to use.
+    """
+    
+    def __init__(self, apply_softmax=True, variant=None):
+        super().__init__()
+        self.apply_softmax = apply_softmax
+        self.variant = str(variant).lower()
+    
+    def forward(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
+        if self.variant == 'soft':
+            return soft_dice_loss(input, target, self.apply_softmax)
+        elif self.variant == 'none':
+            return dice_loss(input, target, self.apply_softmax)
+
+
+def dice_loss(input: torch.Tensor, target: torch.Tensor, softmax=True) -> torch.Tensor:
+    """Regular Dice loss.
+    
+    Parameters
+    ----------
+    input: Tensor
+    (N, K, H, W) Predicted classes for each pixel.
+    target: LongTensor
+    (N, K, H, W) Tensor of pixel labels where `K` is the no. of classes.
+    softmax: bool
+    Whether to apply `F.softmax` to input to get class probabilities.
+    """
+    target = F.one_hot(target).permute(0, 3, 1, 2)
+    dims = (1, 2, 3)  # sum over C, H, W
+    if softmax:
+        input = F.softmax(input, dim=1)
+    intersect = torch.sum(input * target, dim=dims)
+    denominator = torch.sum(input + target, dim=dims)
+    ratio = (intersect + EPSILON) / (denominator + EPSILON)
+    return torch.mean(1 - 2. * ratio)
+
+
 def soft_dice_loss(input: torch.Tensor, target: torch.Tensor, softmax=True) -> torch.Tensor:
     """Mean soft dice loss over the batch. From Milletari et al. (2016) https://arxiv.org/pdf/1606.04797.pdf 
     
@@ -29,28 +72,30 @@ def soft_dice_loss(input: torch.Tensor, target: torch.Tensor, softmax=True) -> t
 
 
 class CombinedLoss(nn.Module):
-    """Combined cross-entropy + soft-dice loss
+    """Combined cross-entropy + dice loss. The soft Dice loss can also be used.
     
     See nn-UNet paper: https://arxiv.org/pdf/1809.10486.pdf"""
     
-    def __init__(self, weight: torch.Tensor=None):
+    def __init__(self, weight: torch.Tensor=None, dice_variant=None):
         super().__init__()
+        self._dice = DiceLoss(variant=dice_variant)
         self.weight = weight
 
     def __call__(self, input: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         """CE + Dice"""
         return F.cross_entropy(input, target, reduction="mean", weight=self.weight) \
-            + soft_dice_loss(input, target)
+            + self._dice(input, target)
 
 
 def soft_iou_loss(input: torch.Tensor, target: torch.Tensor):
     """https://arxiv.org/pdf/1705.08790.pdf"""
     raise NotImplementedError("IoU loss not implemented")
 
+
 def tanimoto_loss(input: torch.Tensor, target: torch.Tensor, softmax=True):
     """Tanimoto loss. 
     
-    See eq. 3 of ResU-Net paper: https://arxiv.org/pdf/1904.00592.pdf
+    See eq. (3) of ResU-Net paper: https://arxiv.org/pdf/1904.00592.pdf
     """
     target = F.one_hot(target).permute(0, 3, 1, 2)
     dims = (1, 2, 3)  # sum over C, H, W
@@ -65,7 +110,7 @@ def tanimoto_loss(input: torch.Tensor, target: torch.Tensor, softmax=True):
 def tanimoto_complement_loss(input: torch.Tensor, target: torch.Tensor, softmax=True):
     """Tanimoto loss with complement. 
     
-    See eq. 3 of ResU-Net paper: https://arxiv.org/pdf/1904.00592.pdf
+    See eq. (3) of ResU-Net paper: https://arxiv.org/pdf/1904.00592.pdf
     """
     if softmax:
         input = F.softmax(input, dim=1)
@@ -80,7 +125,7 @@ def focal_loss(input: torch.Tensor, target: torch.Tensor, gamma=2, alpha=1):
     See: https://arxiv.org/pdf/1708.02002.pdf 
     """
     target = target.detach()
-    ce_loss = F.cross_entropy(input, target, reduce=False)  # vector of losses
+    ce_loss = F.cross_entropy(input, target, reduce=False)  # vector of loss terms
     loss = alpha * (1 - torch.exp(-ce_loss)) ** gamma * ce_loss
     return loss.mean()
 

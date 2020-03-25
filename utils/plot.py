@@ -20,7 +20,7 @@ def plot_prediction(img: torch.Tensor, pred_mask: torch.Tensor, target: torch.Te
     We expect the inputs to be 4D mini-batch `Tensor`s of shape (B x C x H x W) (except for target which can be B x H x W and is handled in that case).
     The `img` image tensor is expected to be in cv2 `(B,G,R)` format. `pred_mask` is expected to be pre-Softmax unless `apply_softmax` is True.
     """
-    batch_size = img.shape[0]
+    batch_size = min(12, img.shape[0])  # never plot more than 2 images
     ncol = batch_size // 4
     img = make_grid(img, 4)
     # put on CPU, denormalize

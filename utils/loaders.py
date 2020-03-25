@@ -15,11 +15,11 @@ from albumentations.pytorch import ToTensorV2 as ToTensor
 
 MAX_SIZE = 448
 
-def make_train_transform(mean=0, std=1):
+def _make_train_transform(mean=0, std=1):
     _train = Compose([
         HorizontalFlip(),
         VerticalFlip(),
-        Rotate(90, p=.4, border_mode=cv2.BORDER_CONSTANT, value=0),
+        Rotate(90, p=.5, border_mode=cv2.BORDER_CONSTANT, value=0),
         # ElasticTransform(sigma=10, border_mode=cv2.BORDER_CONSTANT, value=0, p=.1),
         OneOf([
             # RandomResizedCrop(PATCH_SIZE, PATCH_SIZE, scale=(.3, 1.), ratio=(1., 1.), p=.8),
@@ -36,32 +36,27 @@ def make_train_transform(mean=0, std=1):
 
 ## Use the mean and std values recorded in the JSON file !
 # Default train transform converts to Tensor
-
 import json
 
 with open("dataset_statistics.json") as f:
     statistics_ = json.load(f)
 
 
-train_transform = make_train_transform(
-    mean=statistics_['DRIVE']['mean'],
-    std=statistics_['DRIVE']['std'])
+def get_transforms(name):
 
-val_transform = Compose([
-    Resize(PATCH_SIZE, PATCH_SIZE),
-    CLAHE(always_apply=True),
-    Normalize(mean=statistics_['DRIVE']['mean'],
-              std=statistics_['DRIVE']['std']),
-    ToTensor(),
-])
+    train_transform = _make_train_transform(
+        mean=statistics_[name]['mean'],
+        std=statistics_[name]['std'])
 
-# Test-time data augmentation; we only apply the CLAHE operator and normalize.
-test_transform = Compose([
-    CLAHE(always_apply=True),
-    Normalize(mean=statistics_['DRIVE']['mean'],
-              std=statistics_['DRIVE']['std']),
-    ToTensor(),
-])
+    val_transform = Compose([
+        Resize(PATCH_SIZE, PATCH_SIZE),
+        CLAHE(always_apply=True),
+        Normalize(mean=statistics_[name]['mean'],
+                std=statistics_[name]['std']),
+        ToTensor(),
+    ])
+
+    return train_transform, val_transform    
 
 def denormalize(image: torch.Tensor, normalizer=None, mean=0, std=1):
     """Convert normalized image Tensor to Numpy image array."""
