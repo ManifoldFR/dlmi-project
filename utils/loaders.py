@@ -69,31 +69,27 @@ def denormalize(image: torch.Tensor, normalizer=None, mean=0, std=1):
     return image
 
 
-def get_datasets(name):
-    """Construct and return dataset instances for our prewritten datasets,
-    along with their appropriate transforms."""
-    train_transform, val_transform = get_transforms(name)    
 
-    if name == "DRIVE":
-        return {
-            "train": DriveDataset("data/drive/training", transforms=train_transform, 
-                                green_only=True, train=True, subset=DRIVE_SUBSET_TRAIN),
-            "val": DriveDataset("data/drive/training", transforms=val_transform,
-                                green_only=True, train=True, subset=DRIVE_SUBSET_VAL),
-            "test": DriveDataset("data/drive/test", transforms=val_transform,
-                                green_only=True, train=False)
-        }
-    elif name == "STARE":
-        return {
-            "train": STAREDataset("data/stare", transforms=train_transform,
-                                combination_type="random", subset=STARE_SUBSET_TRAIN),
-            "val": STAREDataset("data/stare", transforms=train_transform,
-                                combination_type="random", subset=STARE_SUBSET_VAL)
-        }
-    elif name == "ARIA":
-        return {
-            "train": ARIADataset(transforms=train_transform,
-                                 combination_type="random", subset=ARIA_SUBSET_TRAIN),
-            "val": ARIADataset(transforms=val_transform,
-                                 combination_type="random", subset=ARIA_SUBSET_VAL)
-        }
+
+DATASET_MAP = {
+    "DRIVE": {
+        "train": DriveDataset("data/drive/training", transforms=train_transform, 
+                              green_only=True, train=True, subset=DRIVE_SUBSET_TRAIN),
+        "val": DriveDataset("data/drive/training", transforms=val_transform,
+                            green_only=True, train=True, subset=DRIVE_SUBSET_VAL),
+        "test": DriveDataset("data/drive/test", transforms=test_transform,
+                             green_only=True, train=False)
+    },
+    "STARE": {
+        "train": STAREDataset("data/stare", transforms=train_transform,
+                              combination_type="random", subset=STARE_SUBSET_TRAIN),
+        "val": STAREDataset("data/stare", transforms=train_transform,
+                              combination_type="random", subset=STARE_SUBSET_VAL)
+    },
+    "ARIA": {
+    "train": STAREDataset("data/aria", transforms=train_transform,
+                          combination_type="random", subset=ARIA_SUBSET_TRAIN),
+    "val": STAREDataset("data/aria", transforms=train_transform,
+                          combination_type="random", subset=ARIA_SUBSET_VAL)
+    }
+}
