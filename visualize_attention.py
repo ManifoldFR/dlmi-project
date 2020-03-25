@@ -33,15 +33,24 @@ parser = argparse.ArgumentParser(
     "visualize-attention",
     description="Visualize attention maps of the Attention U-Net model.")
 parser.add_argument("--weights", help="Path to model weights.")
-parser.add_argument("--img-path", type=str, help="Image to run the model on.", required=True)
-parser.add_argument("--gray", type=bool, default=True,
+parser.add_argument("--img", type=str, help="Image to run the model on.", required=True)
+
+model_parser = parser.add_argument_group("model params")
+model_parser.add_argument("--gray", type=bool, default=True,
                     help="Whether to load the image in grayscale, and apply appropriate model. (default %(default)s)")
+model_parser.add_argument("--antialias", action='store_true',
+                    help="Use model with anti-aliased max pooling operator.")
 
 args = parser.parse_args()
 
 num_channels = 1 if args.gray else 3
 
-model = AttentionUNet(num_channels=num_channels)
+_kwargs = {
+    'num_channels': num_channels,
+    'antialias': args.antialias
+}
+
+model = AttentionUNet(**_kwargs)
 if args.weights is not None:
     state_dict = torch.load(args.weights)
     model.load_state_dict(state_dict['model_state_dict'])
@@ -62,7 +71,7 @@ def preprocess_image(path):
         img_t = img_t[[1]].unsqueeze(0)  # shape (B, 1, H, W)
     return img_orig, img_t.to(DEVICE)
 
-img, img_t = preprocess_image(args.img_path)
+img, img_t = preprocess_image(args.img)
 input_size = img.shape[:2]
 att_viz = AttentionMapHook(model, upscale=True, input_size=input_size)
 
