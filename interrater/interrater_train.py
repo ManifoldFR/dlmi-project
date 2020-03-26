@@ -311,6 +311,8 @@ plot_metrics("mae",save_perf, epochs, validate_every, start_at_epoch = start_ep,
 plot_metrics("max_error",save_perf, epochs, validate_every, start_at_epoch = start_ep, save = True, name= "plot_metric"+name_append, root = "figures")
 plot_target_output(save_perf, metric = interrater_metrics, save = True, name= "plot_target_output"+name_append, root = "figures")
 
+
+
 ## Check target VS initial target 
 target = save_perf["val_details"][epochs-1]["targets"]
 output = save_perf["val_details"][epochs-1]["outputs"]

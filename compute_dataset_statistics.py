@@ -2,6 +2,12 @@ import torch
 from torch.utils.data import ConcatDataset, DataLoader
 from config import *
 from utils.datasets import DriveDataset, STAREDataset, ARIADataset
+import numpy as np
+#import numpy as np
+
+
+
+
 
 #SUBSET_SLICE = slice(0, 15)
 # dataset_name = 'DRIVE'
@@ -9,11 +15,11 @@ from utils.datasets import DriveDataset, STAREDataset, ARIADataset
 
 #SUBSET_SLICE = slice(0, 15)
 #dataset_name = 'STARE'
+#SUBSET_SLICE = STARE_SUBSET_TRAIN
 #train_dataset = STAREDataset("data/stare", subset=SUBSET_SLICE)
 
 dataset_name = 'ARIA'
 train_dataset = ARIADataset()
-
 
 print(len(train_dataset))
 

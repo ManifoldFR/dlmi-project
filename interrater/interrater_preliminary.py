@@ -119,7 +119,7 @@ for density in [True,False]:
         
 
 # compute normalized metrics (based on the trainset only)
-train_split = {"aria" : 107, "chasedb1": 15, "stare":15}
+train_split = {"chasedb1": 15, "stare":15}
 for DB in DB_list :
     for metric in metrics_list : 
         mean = np.mean(list(dict_interrater[DB][metric])[:train_split[DB]])
@@ -127,9 +127,13 @@ for DB in DB_list :
         dict_interrater[DB][metric+"_norm"]=(dict_interrater[DB][metric]-mean)/std
 pkl.dump(dict_interrater, open(os.path.join(INTERRATER_FOLDER,'dict_interrater.pkl'), 'wb'))
 
+DB = "aria"
 
-
-
+for metric in metrics_list : 
+        mean = np.mean([list(dict_interrater[DB][metric])[i] for i in ARIA_SUBSET_TRAIN])
+        std = np.std([list(dict_interrater[DB][metric])[i] for i in ARIA_SUBSET_TRAIN])
+        dict_interrater[DB][metric+"_norm"]=(dict_interrater[DB][metric]-mean)/std
+pkl.dump(dict_interrater, open(os.path.join(INTERRATER_FOLDER,'dict_interrater.pkl'), 'wb'))
 
 
 

@@ -50,8 +50,8 @@ MAX_SIZE = int(448/ratio)
 print("CONFIG SIZE : ",SIZE,", MAX SIZE ",MAX_SIZE)
 
 ### Training params
-#epochs = 40
-epochs = 20
+epochs = 23
+#epochs = 20
 #epochs = 15
 #epochs = 10
 #batch_size = 5
