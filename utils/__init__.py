@@ -1,7 +1,7 @@
 """Utilities."""
 from albumentations.pytorch.functional import img_to_tensor
 from albumentations.augmentations.functional import resize, normalize, gamma_transform
-from config import PATCH_SIZE, GAMMA_CORRECTION
+#from config import PATCH_SIZE, GAMMA_CORRECTION
 import cv2
 import json
 

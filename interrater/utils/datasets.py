@@ -39,8 +39,8 @@ class STAREDataset(VisionDataset):
         assert len(self.images) == len(self.target)
         
         if subset is not None:
-            self.images = self.images[subset]
-            self.target = self.target[subset]
+            self.images = [self.images[i] for i in subset]
+            self.target = [self.target[i] for i in subset]
         self.green_only = green_only
 
     def __len__(self):
@@ -94,8 +94,8 @@ class ARIADataset(VisionDataset):
         assert len(self.images) == len(self.target)
 
         if subset is not None:
-            self.images = self.images[subset]
-            self.target = self.target[subset]
+            self.images = [self.images[i] for i in subset]
+            self.target = [self.target[i] for i in subset]
 
         self.green_only = green_only
 

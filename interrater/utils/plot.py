@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+import pandas as pd
+import datetime
 
 def plot_loss(save_perf, epochs, validate_every, start_at_epoch = 1, save = False, name= "plot_loss", root = "figures"):
     ''' Takes as input the dictionnary defined in interrater_train and plots training and validation loss
@@ -66,8 +68,26 @@ def plot_target_output(save_perf, metric = "IoU", save = False, name= "plot_targ
 
 
 
-
-
+def write_sumup(save_perf):
+    perf_df_tot = pd.read_csv(os.path.join("interrater", "models","perf_df.csv"))
+    epochs = save_perf["config"]["epochs"]
+    perf_df = {}
+    perf_df["index"] = len(perf_df_tot)
+    for k in list(save_perf["config"].keys()):
+        perf_df[k] = save_perf["config"][k]
+    perf_df["SUB_TRAIN"]=["_".join([str(i) for i in perf_df["SUB_TRAIN"]])]
+    perf_df["SUB_VAL"]=["_".join([str(i) for i in perf_df["SUB_VAL"]])]
+    perf_df["train_loss"] = save_perf["train_loss"][epochs-1]
+    perf_df["val_loss"] = save_perf["train_loss"][epochs-1]
+    perf_df["train_mae"] = save_perf["train_acc"][epochs-1]["mae"] 
+    perf_df["train_max_error"] = save_perf["train_acc"][epochs-1]["max_error"] 
+    perf_df["val_mae"] = save_perf["val_acc"][epochs-1]["mae"] 
+    perf_df["val_max_error"] = save_perf["val_acc"][epochs-1]["max_error"] 
+    perf_df["time"]=datetime.datetime.now()
+    perf_df = pd.DataFrame(perf_df, index=[len(perf_df_tot)])
+    perf_df_tot = pd.concat([perf_df_tot,perf_df])
+    perf_df_tot.to_csv(os.path.join("interrater", "models","perf_df.csv"), index = False)
+    print("updated sumup")
 
 
 

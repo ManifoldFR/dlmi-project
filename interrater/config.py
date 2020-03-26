@@ -17,12 +17,22 @@ torch.random.manual_seed(0)
 np.random.seed(0)
 
 
-STARE_SUBSET_TRAIN = slice(0, 15)
-STARE_SUBSET_VAL = slice(15, 21)
+ARIA_SHUFFLE = np.random.choice(range(143), size=143, replace=False)
+STARE_SHUFFLE = np.random.choice(range(21), size=21, replace=False)
 
-ARIA_SUBSET_TRAIN = slice(0, 107)
-ARIA_SUBSET_VAL = slice(107, 127)
-ARIA_SUBSET_TEST = slice(127, 143)
+STARE_SUBSET_TRAIN = STARE_SHUFFLE[:15]
+STARE_SUBSET_VAL = STARE_SHUFFLE[15:21]
+
+# initial config
+ARIA_SUBSET_TRAIN = ARIA_SHUFFLE[:107]
+print(ARIA_SUBSET_TRAIN)
+ARIA_SUBSET_VAL = ARIA_SHUFFLE[107:127]
+ARIA_SUBSET_TEST = ARIA_SHUFFLE[127:143]
+
+## change config
+#ARIA_SUBSET_TRAIN = slice(20, 127)
+#ARIA_SUBSET_VAL = slice(0, 20)
+#ARIA_SUBSET_TEST = slice(127, 143)
 
 # Input image resolution
 PATCH_SIZE = 320
@@ -50,6 +60,7 @@ batch_size = 1
 
 #model = "InterraterNet"
 model = "InterraterNet_pool"
+model_name = model
 #num_pool = 10
 num_pool = 4
 
@@ -65,12 +76,11 @@ lr = 5e-3
 #transforms_name = "make_train_transform"
 transforms_name = "make_basic_train_transform"
 
-#interrater_metrics = "IoU"
-#interrater_metrics = "scaled_IoU"
-#interrater_metrics = "scaled_entropy"
-interrater_metrics = "entropy"
+interrater_metrics = "IoU"
+#interrater_metrics = "entropy"
 
 normalize_metric = True
+#normalize_metric = False
 
 if normalize_metric == False :
     interrater_metrics=interrater_metrics
@@ -80,6 +90,7 @@ else :
 print("metrics used in config : ", interrater_metrics)
 
 loss = "MSE"
+loss_name = loss
 
 normalize_dataset = False
 
@@ -92,6 +103,7 @@ dataset = "ARIA"
 test_in_train = True
 test_in_net = False
 
+sub_val={"ARIA":[ARIA_SUBSET_TRAIN, ARIA_SUBSET_VAL, ARIA_SUBSET_TEST],
+         "STARE" : [STARE_SUBSET_TRAIN, STARE_SUBSET_VAL]}
 
-
-
+shuffled_DB=True

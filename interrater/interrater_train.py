@@ -2,7 +2,7 @@ import argparse
 import os
 os.chdir("C:/Users/Philo/Documents/3A -- MVA/DL for medical imaging/retine/dlmi-project")
 
-
+import pickle as pkl
 import datetime
 import numpy as np
 import torch
@@ -18,6 +18,7 @@ import sklearn.metrics as skm
 #from interrater.config import *
 from interrater.config import lr, epochs, batch_size, model, loss, validate_every, num_pool
 from interrater.config import dataset, transforms_name, interrater_metrics, test_in_train, normalize_dataset
+from interrater.config import model_name, SIZE, MAX_SIZE, loss_name, sub_val, shuffled_DB
 from interrater.utils.loaders import *
 #from interrater.nets import *
 #from interrater.utils.loaders import DATASET_MAP
@@ -282,14 +283,28 @@ if test_in_train == True :
 #            }, save_path)
 
 
+
 print("Final train loss : ", save_perf["train_loss"][epochs-1])
 print("Final valid loss : ", save_perf["val_loss"][epochs-1])
 print("Ratio between valid and train loss : ", save_perf["val_loss"][epochs-1]/save_perf["train_loss"][epochs-1])
 
+name_append = str(lr)+"_"+str(epochs)+"_"+str(batch_size)+"_"+str(num_pool)+"_"+interrater_metrics
+
+save_perf["config"] = {"lr":lr, "epochs":epochs, "batch_size":batch_size, "model_name":model_name, 
+         "loss_name":loss_name, "validate_every":validate_every, "num_pool":num_pool,"dataset":dataset, 
+                "transforms_name":transforms_name, "interrater_metrics":interrater_metrics, 
+                "normalize_dataset":normalize_dataset,
+                "SIZE":SIZE, "MAX_SIZE":MAX_SIZE,"SUB_TRAIN":sub_val[dataset][0],"SUB_VAL":sub_val[dataset][1],
+                "shuffled_DB":shuffled_DB}
+pkl.dump(save_perf, open(os.path.join("interrater", "models",str(name_append+'.pkl')), 'wb'))
+save_perf = pkl.load(open(os.path.join("interrater", "models",str(name_append+'.pkl')), 'rb'))
+
+
+write_sumup(save_perf)
+
 
 ### Plot results
 start_ep = 1
-name_append = str(lr)+"_"+str(epochs)+"_"+str(batch_size)+"_"+str(num_pool)+"_"+interrater_metrics
 from interrater.config import dataset, transforms_name, interrater_metrics, test_in_train, normalize_dataset
 plot_loss(save_perf, epochs, validate_every, start_at_epoch = start_ep, save = True, name= "plot_loss"+name_append, root = "figures")
 plot_metrics("mae",save_perf, epochs, validate_every, start_at_epoch = start_ep, save = True, name= "plot_metric"+name_append, root = "figures")
@@ -304,12 +319,30 @@ print("output : ", output)
 import pickle as pkl
 pkl.dump({"target":target,"output":output}, open(os.path.join("interrater", "figures",str(name_append+'.pkl')), 'wb'))
 
+
+
+
+
 #print("interrater metrics in train file : ",interrater_metrics)
 
 
-##import pickle as pkl
-#target_dict = pkl.load(open(os.path.join("data", "interrater_data",'dict_interrater.pkl'), 'rb'))
-#
+#import pickle as pkl
+target_dict = pkl.load(open(os.path.join("data", "interrater_data",'dict_interrater.pkl'), 'rb'))
+plt.hist(target_dict[dataset.lower()][interrater_metrics][ARIA_SUBSET_TRAIN],bins = 30)
+plt.title("Distribution of "+interrater_metrics+" in the ARIA train")
+plt.xlabel(interrater_metrics)
+plt.ylabel("Number of images")
+plt.show()
+
+target_dict = pkl.load(open(os.path.join("data", "interrater_data",'dict_interrater.pkl'), 'rb'))
+plt.hist(target_dict[dataset.lower()][interrater_metrics][ARIA_SUBSET_VAL],bins = 30)
+plt.title("Distribution of "+interrater_metrics+" in the ARIA train")
+plt.xlabel(interrater_metrics)
+plt.ylabel("Number of images")
+plt.show()
+ 
+
+
 #for metric in ["IoU","entropy"]:
 #    plt.hist(target_dict[dataset.lower()][metrics][:107],bins = 30)
 #    plt.title("Distribution of "+metric+ " in the ARIA train")
