@@ -65,3 +65,33 @@ def plot_prediction(img: torch.Tensor, pred_mask: torch.Tensor, target: torch.Te
 
     fig.tight_layout()
     return fig
+
+def make_overlay(proba_map):
+    """Make transparent overlay image from probability map to
+    superimpose over input for plotting."""
+    prob_overlay = np.ones(proba_map.shape + (4,))
+    prob_overlay[..., 3] = proba_map
+    return prob_overlay
+
+
+def plot_with_overlay(img, probas_, figsize=None, **kwargs):
+    fig: plt.Figure = plt.figure(figsize=figsize)
+
+    ax = fig.add_subplot(1, 3, 1)
+    ax.imshow(img)
+    ax.set_title("Initial image")
+    ax.axis('off')
+
+    ax = fig.add_subplot(1, 3, 2)
+    ax.imshow(probas_)
+    ax.set_title("Proba map")
+    ax.axis('off')
+    fig.tight_layout()
+
+    ax = fig.add_subplot(1, 3, 3)
+    ax.imshow(img, extent=[0, 1, 0, 1])
+    prob_overlay = make_overlay(probas_)
+    ax.imshow(prob_overlay, extent=[0, 1, 0, 1])
+    ax.set_title("Overlay")
+    ax.axis('off')
+    fig.tight_layout()

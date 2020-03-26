@@ -61,6 +61,7 @@ def get_transforms(name):
 
     return train_transform, val_transform    
 
+
 def denormalize(image: torch.Tensor, normalizer=None, mean=0, std=1):
     """Convert normalized image Tensor to Numpy image array."""
     image = np.moveaxis(image.numpy(), 0, -1)

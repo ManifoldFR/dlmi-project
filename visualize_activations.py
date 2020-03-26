@@ -4,6 +4,7 @@ import torch
 from nets import MODEL_DICT
 from utils.interpretation import DownBlockActivations
 from utils import load_preprocess_image
+from utils.plot import plot_with_overlay
 
 import cv2
 import matplotlib.pyplot as plt
@@ -77,18 +78,8 @@ with torch.no_grad():
 
 # Plotting logic
 
-# fig: plt.Figure = plt.figure(figsize=(8, 5))
 
-# ax = fig.add_subplot(1, 2, 1)
-# ax.imshow(img)
-# ax.set_title("Initial image")
-# ax.axis('off')
-
-# ax = fig.add_subplot(1, 2, 2)
-# ax.imshow(probas_)
-# ax.set_title("Proba map")
-# ax.axis('off')
-# fig.tight_layout()
+fig = plot_with_overlay(img, probas_, figsize=(12, 5))
 
 
 for idx, (name, arr) in enumerate(viz_.get_maps(img_t)):
