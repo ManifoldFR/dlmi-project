@@ -1,21 +1,21 @@
-,images,STAPLE,annot1,annot2,disc_fovea_available,disc_fovea,code,description
-0,im0001.png,im0001.png,im0001.ah.png,im0001.vk.png,0,,7,Background Diabetic Retinopathy
-1,im0002.png,im0002.png,im0002.ah.png,im0002.vk.png,0,,13 9,Choroidal Neovascularization AND Arteriosclerotic Retinopathy
-2,im0003.png,im0003.png,im0003.ah.png,im0003.vk.png,0,,14,
-3,im0004.png,im0004.png,im0004.ah.png,im0004.vk.png,0,,14 3,Cilio-Retinal Artery Occlusion OR Central Retinal Artery Occlusion
-4,im0005.png,im0005.png,im0005.ah.png,im0005.vk.png,0,,3 5,Central Retinal Artery Occlusion AND Central Retinal Vein Occlusion
-5,im0044.png,im0044.png,im0044.ah.png,im0044.vk.png,0,,14,"Retinitis, Disease"
-6,im0077.png,im0077.png,im0077.ah.png,im0077.vk.png,0,,0 10,Normal AND Hypertensive Retinopathy [V: How could it be?]  
-7,im0081.png,im0081.png,im0081.ah.png,im0081.vk.png,0,,0,Normal
-8,im0082.png,im0082.png,im0082.ah.png,im0082.vk.png,0,,0,Normal
-9,im0139.png,im0139.png,im0139.ah.png,im0139.vk.png,0,,7,Background Diabetic Retinopathy
-10,im0162.png,im0162.png,im0162.ah.png,im0162.vk.png,0,,0,Normal
-11,im0163.png,im0163.png,im0163.ah.png,im0163.vk.png,0,,0,Normal
-12,im0235.png,im0235.png,im0235.ah.png,im0235.vk.png,0,,0,Normal
-13,im0236.png,im0236.png,im0236.ah.png,im0236.vk.png,0,,0,Normal
-14,im0239.png,im0239.png,im0239.ah.png,im0239.vk.png,0,,0,Normal
-15,im0240.png,im0240.png,im0240.ah.png,im0240.vk.png,0,,0,Normal
-16,im0255.png,im0255.png,im0255.ah.png,im0255.vk.png,0,,0,Normal
-17,im0291.png,im0291.png,im0291.ah.png,im0291.vk.png,0,,14,Vasculitis
-18,im0319.png,im0319.png,im0319.ah.png,im0319.vk.png,0,,1,"Emboli, Non-Hollenhorst"
-19,im0324.png,im0324.png,im0324.ah.png,im0324.vk.png,0,,1,
+,Unnamed: 0,images,STAPLE,annot1,annot2,disc_fovea_available,disc_fovea,code,description,train,val,test
+0,0,im0001.png,im0001.png,im0001.ah.png,im0001.vk.png,0,,7,Background Diabetic Retinopathy,1,0,0
+1,1,im0002.png,im0002.png,im0002.ah.png,im0002.vk.png,0,,13 9,Choroidal Neovascularization AND Arteriosclerotic Retinopathy,1,0,0
+2,2,im0003.png,im0003.png,im0003.ah.png,im0003.vk.png,0,,14,,0,1,0
+3,3,im0004.png,im0004.png,im0004.ah.png,im0004.vk.png,0,,14 3,Cilio-Retinal Artery Occlusion OR Central Retinal Artery Occlusion,0,1,0
+4,4,im0005.png,im0005.png,im0005.ah.png,im0005.vk.png,0,,3 5,Central Retinal Artery Occlusion AND Central Retinal Vein Occlusion,1,0,0
+5,5,im0044.png,im0044.png,im0044.ah.png,im0044.vk.png,0,,14,"Retinitis, Disease",1,0,0
+6,6,im0077.png,im0077.png,im0077.ah.png,im0077.vk.png,0,,0 10,Normal AND Hypertensive Retinopathy [V: How could it be?]  ,1,0,0
+7,7,im0081.png,im0081.png,im0081.ah.png,im0081.vk.png,0,,0,Normal,1,0,0
+8,8,im0082.png,im0082.png,im0082.ah.png,im0082.vk.png,0,,0,Normal,0,1,0
+9,9,im0139.png,im0139.png,im0139.ah.png,im0139.vk.png,0,,7,Background Diabetic Retinopathy,1,0,0
+10,10,im0162.png,im0162.png,im0162.ah.png,im0162.vk.png,0,,0,Normal,1,0,0
+11,11,im0163.png,im0163.png,im0163.ah.png,im0163.vk.png,0,,0,Normal,0,1,0
+12,12,im0235.png,im0235.png,im0235.ah.png,im0235.vk.png,0,,0,Normal,1,0,0
+13,13,im0236.png,im0236.png,im0236.ah.png,im0236.vk.png,0,,0,Normal,0,1,0
+14,14,im0239.png,im0239.png,im0239.ah.png,im0239.vk.png,0,,0,Normal,1,0,0
+15,15,im0240.png,im0240.png,im0240.ah.png,im0240.vk.png,0,,0,Normal,1,0,0
+16,16,im0255.png,im0255.png,im0255.ah.png,im0255.vk.png,0,,0,Normal,1,0,0
+17,17,im0291.png,im0291.png,im0291.ah.png,im0291.vk.png,0,,14,Vasculitis,1,0,0
+18,18,im0319.png,im0319.png,im0319.ah.png,im0319.vk.png,0,,1,"Emboli, Non-Hollenhorst",0,1,0
+19,19,im0324.png,im0324.png,im0324.ah.png,im0324.vk.png,0,,1,,1,0,0
