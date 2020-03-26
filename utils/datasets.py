@@ -117,7 +117,7 @@ class STAREDataset(VisionDataset):
     green_only : bool
         Only use the green channel (idx 1).
     """
-    def __init__(self, root: str="data/stare", transforms=None, combination_type="random", subset=None, green_only=True):
+    def __init__(self, root: str="data/stare", transforms=None, combination_type="STAPLE", subset=None, green_only=True):
         super().__init__(root, transforms=transforms)
         self.images = sorted(glob.glob(os.path.join(root, "images/*.ppm")))
         self.target1 = sorted(glob.glob(os.path.join(root, "annotation 1/*.png")))
@@ -178,7 +178,7 @@ class ARIADataset(VisionDataset):
         Only use the green channel (idx 1).
     """
     def __init__(self, data_file: str="data/aria/aria_df.csv", root="data/aria", mode="train", transforms=None,
-                 combination_type="random", subset=None, green_only=True):
+                 combination_type="STAPLE", subset=None, green_only=True):
         """
         
         Parameters

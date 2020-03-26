@@ -145,6 +145,8 @@ if __name__ == "__main__":
     BATCH_SIZE = args.batch_size
     
     print("Training model %s" % args.model)
+    if _kwargs['antialias']:
+        print("  with antialiased maxpooling")
     
     # Make model
     model_class = MODEL_DICT[args.model]
@@ -166,6 +168,7 @@ if __name__ == "__main__":
 
     # Define dataset
     DATASET = args.dataset
+    print("Dataset: {:s}".format(DATASET))
     dsets_ = get_datasets(DATASET)
     train_dataset, val_dataset = dsets_['train'], dsets_['val']
 
