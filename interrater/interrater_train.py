@@ -17,7 +17,7 @@ import sklearn.metrics as skm
 
 #from interrater.config import *
 from interrater.config import lr, epochs, batch_size, model, loss, validate_every, num_pool
-from interrater.config import dataset, transforms_name, interrater_metrics, test_in_train
+from interrater.config import dataset, transforms_name, interrater_metrics, test_in_train, normalize_dataset
 from interrater.utils.loaders import *
 #from interrater.nets import *
 #from interrater.utils.loaders import DATASET_MAP
@@ -164,9 +164,9 @@ if test_in_train == True :
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.8)
 
     # Define dataset
-    DATASET = dataset
-    train_dataset = DATASET_MAP[DATASET]['train']
-    val_dataset = DATASET_MAP[DATASET]['val']
+    DATASET = get_datasets(dataset, transforms_name, interrater_metrics, normalize = normalize_dataset)
+    train_dataset = DATASET['train']
+    val_dataset = DATASET['val']
     
     # Define loaders
     train_loader = DataLoader(train_dataset, BATCH_SIZE, shuffle=True)
@@ -288,26 +288,40 @@ print("Ratio between valid and train loss : ", save_perf["val_loss"][epochs-1]/s
 
 
 ### Plot results
-start_ep = 3
-plot_loss(save_perf, epochs, validate_every, start_at_epoch = start_ep, save = False, name= "plot_loss", root = "figures")
-#plot_metrics("mae",save_perf, epochs, validate_every, start_at_epoch = start_ep, save = False, name= "plot_metric", root = "figures")
-#plot_metrics("max_error",save_perf, epochs, validate_every, start_at_epoch = start_ep, save = False, name= "plot_metric", root = "figures")
-#plot_target_output(save_perf, metric = interrater_metrics, save = False, name= "plot_target_output", root = "figures")
+start_ep = 1
+name_append = str(lr)+"_"+str(epochs)+"_"+str(batch_size)+"_"+str(num_pool)+"_"+interrater_metrics
+from interrater.config import dataset, transforms_name, interrater_metrics, test_in_train, normalize_dataset
+plot_loss(save_perf, epochs, validate_every, start_at_epoch = start_ep, save = True, name= "plot_loss"+name_append, root = "figures")
+plot_metrics("mae",save_perf, epochs, validate_every, start_at_epoch = start_ep, save = True, name= "plot_metric"+name_append, root = "figures")
+plot_metrics("max_error",save_perf, epochs, validate_every, start_at_epoch = start_ep, save = True, name= "plot_metric"+name_append, root = "figures")
+plot_target_output(save_perf, metric = interrater_metrics, save = True, name= "plot_target_output"+name_append, root = "figures")
 
 ## Check target VS initial target 
-#target = save_perf["val_details"][epochs-1]["targets"]
-#output = save_perf["val_details"][epochs-1]["outputs"]
-#print("target : ", target)
-#print("output : ", output)
-#
-#
+target = save_perf["val_details"][epochs-1]["targets"]
+output = save_perf["val_details"][epochs-1]["outputs"]
+print("target : ", target)
+print("output : ", output)
+import pickle as pkl
+pkl.dump({"target":target,"output":output}, open(os.path.join("interrater", "figures",str(name_append+'.pkl')), 'wb'))
+
 #print("interrater metrics in train file : ",interrater_metrics)
 
 
-#import pickle as pkl
+##import pickle as pkl
 #target_dict = pkl.load(open(os.path.join("data", "interrater_data",'dict_interrater.pkl'), 'rb'))
-#target_dict["stare"][interrater_metrics]
-
+#
+#for metric in ["IoU","entropy"]:
+#    plt.hist(target_dict[dataset.lower()][metrics][:107],bins = 30)
+#    plt.title("Distribution of "+metric+ " in the ARIA train")
+#    plt.xlabel(metric)
+#    plt.ylabel("Number of images")
+#    plt.show()
+#    
+#    plt.hist(target_dict[dataset.lower()][metrics],bins = 30)
+#    plt.title("Distribution of "+metric+" in the ARIA dataset")
+#    plt.xlabel(metric)
+#    plt.ylabel("Number of images")
+#    plt.show()
 
 
 

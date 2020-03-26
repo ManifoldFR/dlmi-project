@@ -11,6 +11,8 @@
 *.db
 *.TMP
 *.html
+*.csv
+*.csv#
 
 *.jpg
 *.jpeg

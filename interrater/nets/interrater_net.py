@@ -136,6 +136,7 @@ class InterraterNet_pool(nn.Module):
         self.fc = nn.Linear(int(self.interpolate_dim /(2**(num_pool))),1)
 
     def forward(self, x: Tensor):
+#        print(x.size())
         x1 = self.in_conv(x.float())  # 64 * 1. * 1. ie 224
         x2 = self.down1(x1)  # 128 * 1/2 * 1/2
         x3 = self.down2(x2)  # 256 * 1/4 * 1/4
