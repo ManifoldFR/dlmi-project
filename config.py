@@ -1,4 +1,5 @@
-"""General configuration, and other specific configuration options."""
+"""General configuration, and other specific configuration options that
+are not passed in the CLI."""
 import torch
 import numpy as np
 
@@ -17,7 +18,7 @@ ARIA_SUBSET_VAL = slice(107, 143)
 # Input image resolution
 PATCH_SIZE = 320
 
-GAMMA_CORRECTION = 1.2
+GAMMA_CORRECTION = 1.7
 
 # model config
 ANTIALIAS = False
