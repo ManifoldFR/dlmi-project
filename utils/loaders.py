@@ -7,7 +7,7 @@ from utils.datasets import DriveDataset, STAREDataset, ARIADataset
 from config import *
 
 from albumentations import Compose, Resize, RandomSizedCrop
-from albumentations import ElasticTransform, RandomScale
+from albumentations import ElasticTransform, RandomScale, RandomGamma
 from albumentations import OneOf, Rotate, GaussianBlur, CLAHE, Lambda
 from albumentations import VerticalFlip, HorizontalFlip, Resize, Normalize
 from albumentations.pytorch import ToTensorV2 as ToTensor
@@ -94,7 +94,7 @@ def get_datasets(name):
     elif name == "ARIA":
         return {
             "train": ARIADataset(transforms=train_transform,
-                                 combination_type="random", subset=ARIA_SUBSET_TRAIN),
+                                 mode="train", combination_type="random"),
             "val": ARIADataset(transforms=val_transform,
-                                 combination_type="random", subset=ARIA_SUBSET_VAL)
+                               mode="val", combination_type="random")
         }

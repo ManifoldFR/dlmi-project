@@ -2,6 +2,8 @@ import os.path
 import glob
 import torch
 import numpy as np
+import pandas as pd
+
 import cv2
 try : 
     from config import GAMMA_CORRECTION
@@ -147,7 +149,7 @@ class STAREDataset(VisionDataset):
         return img, target
 
     def combine_multiple_targets(self, t1, t2):
-        return combine_multiple_targets(t1, t2, self.combination_type)
+        return _combine_multiple_targets(t1, t2, self.combination_type)
 
 
 class ARIADataset(VisionDataset):
@@ -162,17 +164,23 @@ class ARIADataset(VisionDataset):
     green_only : bool
         Only use the green channel (idx 1).
     """
-    def __init__(self, root: str="data/aria", transforms=None, combination_type="random", subset=None, green_only=True):
+    def __init__(self, data_file: str="data/aria/aria_df.csv", root="data/aria", mode="train", transforms=None,
+                 combination_type="random", subset=None, green_only=True):
+        """
+        
+        Parameters
+        ----------
+        data_file : str
+            Path to the CSV file with the data correspondances.
+        """
         super().__init__(root, transforms=transforms)
-        self.images = sorted(glob.glob(os.path.join(root, "images/*.tif")))
-        self.target1 = sorted(glob.glob(os.path.join(root, "annotation 1/*.tif")))
-        self.target2 = sorted(glob.glob(os.path.join(root, "annotation 2/*.tif")))
-        self.staple_target = sorted(glob.glob(os.path.join(root, "STAPLE/*.png")))
-        if subset is not None:
-            self.images = self.images[subset]
-            self.target1 = self.target1[subset]
-            self.target2 = self.target2[subset]
-            self.staple_target = self.staple_target[subset]
+        self._data = pd.read_csv(data_file)
+        self._data = self._data[self._data[mode] == 1]
+
+        self.images = _assemble_list((self.root, 'images'), self._data['file_img'])
+        self.target1 = _assemble_list((self.root, 'annotation 1'), self._data['annot1'])
+        self.target2 = _assemble_list((self.root, 'annotation 2'), self._data['annot2'])
+        self.staple_target = _assemble_list((self.root, 'STAPLE'), self._data['STAPLE'])
         self.combination_type = combination_type
         self.green_only = green_only
 
@@ -181,7 +189,11 @@ class ARIADataset(VisionDataset):
 
     def __getitem__(self, index):
         img_path = self.images[index]
-        img = cv2.cvtColor(cv2.imread(img_path), cv2.COLOR_BGR2RGB)
+        print(img_path)
+        try:
+            img = cv2.cvtColor(cv2.imread(img_path), cv2.COLOR_BGR2RGB)
+        except:
+            import ipdb; ipdb.set_trace()
         img = F.gamma_transform(img, GAMMA_CORRECTION)
         
         if self.combination_type == "STAPLE" : 
@@ -197,13 +209,13 @@ class ARIADataset(VisionDataset):
             # pick only green channel
             if self.green_only:
                 img = img[[1]]
-            target = augmented['mask']
-        return img, target.long() / 255
+            target = augmented['mask'].long() / 255
+        return img, target
 
     def combine_multiple_targets(self, t1, t2):
-        return combine_multiple_targets(t1, t2, self.combination_type)
+        return _combine_multiple_targets(t1, t2, self.combination_type)
 
-def combine_multiple_targets(t1, t2, combination_type):
+def _combine_multiple_targets(t1, t2, combination_type):
     if combination_type == "random":
         target=[t1,t2][np.random.randint(2)]
 
@@ -214,3 +226,9 @@ def combine_multiple_targets(t1, t2, combination_type):
         target=((t1==1) & (t2==1))*1
 
     return target
+
+def _assemble_list(root, col):
+    if isinstance(root, list) or isinstance(root, tuple):
+        return [os.path.join(*root, c) for c in col]
+    else:
+        return [os.path.join(root, c) for c in col]

@@ -28,6 +28,8 @@
 !results/**/*.jpg
 !results/**/*.jpeg
 
+!data/aria/*.csv
+
 *.pkl
 *.pickle
 

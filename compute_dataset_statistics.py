@@ -11,9 +11,8 @@ from utils.datasets import DriveDataset, STAREDataset, ARIADataset
 #dataset_name = 'STARE'
 #train_dataset = STAREDataset("data/stare", subset=SUBSET_SLICE)
 
-SUBSET_SLICE = slice(0, 107)
 dataset_name = 'ARIA'
-train_dataset = ARIADataset("data/aria", subset=SUBSET_SLICE)
+train_dataset = ARIADataset()
 
 
 print(len(train_dataset))
