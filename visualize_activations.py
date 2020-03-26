@@ -1,8 +1,9 @@
-"""Perform inference on an example and visualize the attention maps."""
+"""Perform inference on an exemple, and get the resulting activation maps."""
 import numpy as np
 import torch
-from nets import AttentionUNet
-from utils.interpretation import AttentionMapHook
+from torchvision.utils import make_grid
+from nets import MODEL_DICT
+from utils.interpretation import DownBlockActivations
 from utils import load_preprocess_image
 
 import cv2
@@ -29,15 +30,19 @@ else:
 
 
 parser = argparse.ArgumentParser(
-    "visualize-attention",
-    description="Visualize attention maps of the Attention U-Net model.")
+    "visualize-activations",
+    description="Visualize activations in feature maps.")
 parser.add_argument("--weights", help="Path to model weights.")
-parser.add_argument("--img", type=str, help="Image to run the model on.", required=True)
+parser.add_argument("--img", type=str,
+                    help="Image to run the model on.", required=True)
 
+parser.add_argument("--model", choices=MODEL_DICT.keys())
 parser.add_argument("--gray", type=bool, default=True,
                     help="Whether to load the image in grayscale, and apply appropriate model. (default %(default)s)")
 parser.add_argument("--antialias", action='store_true',
                     help="Use model with anti-aliased max pooling operator.")
+parser.add_argument("--save-path", type=str,
+                    help="Save the maps to a file.")
 
 args = parser.parse_args()
 
@@ -48,7 +53,11 @@ _kwargs = {
     'antialias': args.antialias
 }
 
-model = AttentionUNet(**_kwargs)
+print("Model class: {:s}".format(args.model))
+model_cls = MODEL_DICT[args.model]
+
+model = model_cls(**_kwargs)
+
 if args.weights is not None:
     state_dict = torch.load(args.weights)
     model.load_state_dict(state_dict['model_state_dict'])
@@ -58,11 +67,10 @@ else:
 model.to(DEVICE)
 
 
-
 img, img_t = load_preprocess_image(args.img, gray=args.gray)
 img_t = img_t.to(DEVICE)
 input_size = img.shape[:2]
-att_viz = AttentionMapHook(model, upscale=True, input_size=input_size)
+viz_ = DownBlockActivations(model, down_kw=['down1', 'down2', 'down3'])
 
 # Perform prediction
 
@@ -74,38 +82,38 @@ with torch.no_grad():
 
 # Plotting logic
 
-fig: plt.Figure = plt.figure(figsize=(7, 8))
-gs = fig.add_gridspec(3, 4)
+# fig: plt.Figure = plt.figure(figsize=(8, 5))
 
-ax = fig.add_subplot(gs[0, :2])
-ax.imshow(img)
-ax.set_title("Initial image")
-ax.axis('off')
-
-ax = fig.add_subplot(gs[0, 2:])
-# ax.imshow(prediction_)
-# ax.set_title("Network output")
+# ax = fig.add_subplot(1, 2, 1)
+# ax.imshow(img)
+# ax.set_title("Initial image")
 # ax.axis('off')
 
-# ax = fig.add_subplot(gs[0, 3])
-ax.imshow(probas_)
-ax.set_title("Proba map")
-ax.axis('off')
+# ax = fig.add_subplot(1, 2, 2)
+# ax.imshow(probas_)
+# ax.set_title("Proba map")
+# ax.axis('off')
+# fig.tight_layout()
 
-for idx, (name, arr) in enumerate(att_viz.get_maps()):
-    i_loc = 2 * idx + 4
-    arr = arr[0, 0]
-    ax = fig.add_subplot(gs[i_loc:i_loc+2])
-    ims_ = ax.imshow(arr, cmap='viridis')
-    ax.set_title("Attention Map: {:s}".format(name))
+
+for idx, (name, arr) in enumerate(viz_.get_maps(img_t)):
+    print(name, arr.shape)
+    num_feats_ = arr.shape[1]
+    num_rows_mul = num_feats_ // 128
+    arr_grid = make_grid(arr.transpose(0, 1), nrow=16, padding=0,
+                         normalize=True, scale_each=True)
+    arr_grid = arr_grid[0]
+    print("grid:", arr_grid.shape)
+
+    fig: plt.Figure = plt.figure(figsize=(10, num_rows_mul * 5), dpi=100)
+    ax = fig.add_subplot()
+    ims_ = ax.imshow(arr_grid, cmap='viridis')
+    ax.set_title("Activations: {:s}".format(name))
     ax.axis('off')
-    # Plot colorbar on 1st map
-    if idx==0:
-        divider = make_axes_locatable(ax)
-        cax = divider.append_axes('right', size='5%', pad=0.05)
-        plt.colorbar(ims_, cax=cax)
+    fig.tight_layout()
+    
+    if args.save_path is not None:
+        fig.savefig("{:s}_{:s}.png".format(args.save_path, name))
 
 
-fig.tight_layout()
 plt.show()
-

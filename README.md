@@ -24,6 +24,12 @@ To launch the training script:
 python train.py --model attunet --loss combined --lr 0.001 -E 80
 ```
 
+## Inference
+
+```bash
+python inference.py --model attunet --weights path/to/weights
+```
+
 
 ## Data
 
@@ -83,4 +89,10 @@ The Attention U-Net model has attention maps that can be directly interpreted us
 python visualize_attention.py --img-path path/to/img --weights path/to/model
 ```
 check `python visualize_attention.py -h` for options.
+
+### Activation maps
+
+See `visualize_activations.py`
+
+![activation_map_unet1](./results/figures/activations_unet_down1.png)
 

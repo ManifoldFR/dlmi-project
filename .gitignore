@@ -22,6 +22,10 @@
 *.gz
 *.ini
 
+!results/**/*.png
+!results/**/*.jpg
+!results/**/*.jpeg
+
 *.pkl
 *.pickle
 

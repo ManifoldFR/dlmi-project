@@ -4,10 +4,36 @@ import torch.nn.functional as F
 from nets import AttentionUNet
 from config import PATCH_SIZE
 
+from typing import Union, List, Tuple
+
 from captum.attr import (
     Deconvolution,
     LayerActivation
 )
+
+
+class DownBlockActivations(object):
+    
+    def __init__(self, model, down_kw='down'):
+        super().__init__()
+        """
+        Get activations for contracting path of the model.
+        """
+        self._data = {}
+        for name, layer in model.named_children():
+            if isinstance(down_kw, str):
+                choice_ = down_kw in name
+            elif isinstance(down_kw, list):
+                choice_ = name in down_kw
+            if choice_:
+                self._data[name] = LayerActivation(model.forward, layer)
+
+    def get_maps(self, input: Tensor) -> List[Tuple[str, Tensor]]:
+        res_ = []
+        for name, activ in self._data.items():
+            attr_ = activ.attribute(inputs=input).cpu()
+            res_.append((name, attr_))
+        return res_
 
 
 class AttentionMapHook:

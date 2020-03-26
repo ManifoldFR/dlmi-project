@@ -1,4 +1,5 @@
 """Dataloaders."""
+import numpy as np
 import torch
 import cv2
 
@@ -6,14 +7,14 @@ from utils.datasets import DriveDataset, STAREDataset, ARIADataset
 from config import *
 
 from albumentations import Compose, Resize, RandomSizedCrop
-from albumentations import ElasticTransform
+from albumentations import ElasticTransform, RandomScale
 from albumentations import OneOf, Rotate, GaussianBlur, CLAHE, Lambda
 from albumentations import VerticalFlip, HorizontalFlip, Resize, Normalize
 from albumentations.pytorch import ToTensorV2 as ToTensor
 
 ## Define the data augmentation pipeline
 
-MAX_SIZE = 448
+MAX_SIZE = 512
 
 def _make_train_transform(mean=0, std=1):
     _train = Compose([
@@ -22,8 +23,9 @@ def _make_train_transform(mean=0, std=1):
         Rotate(90, p=.5, border_mode=cv2.BORDER_CONSTANT, value=0),
         # ElasticTransform(sigma=10, border_mode=cv2.BORDER_CONSTANT, value=0, p=.1),
         OneOf([
-            # RandomResizedCrop(PATCH_SIZE, PATCH_SIZE, scale=(.3, 1.), ratio=(1., 1.), p=.8),
-            RandomSizedCrop((MAX_SIZE, MAX_SIZE), PATCH_SIZE, PATCH_SIZE, p=.8),
+            Compose([
+                RandomSizedCrop((MAX_SIZE, MAX_SIZE), PATCH_SIZE, PATCH_SIZE, p=1),
+            ], p=.8),
             Resize(PATCH_SIZE, PATCH_SIZE, p=.2),
         ], p=1),
         GaussianBlur(blur_limit=3, p=.2),
@@ -60,7 +62,6 @@ def get_transforms(name):
 
 def denormalize(image: torch.Tensor, normalizer=None, mean=0, std=1):
     """Convert normalized image Tensor to Numpy image array."""
-    import numpy as np
     image = np.moveaxis(image.numpy(), 0, -1)
     if normalizer is not None:
         mean = normalizer.mean
