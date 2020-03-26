@@ -43,13 +43,13 @@ class DriveDataset(VisionDataset):
         self.images = sorted(glob.glob(os.path.join(root, "images/*.tif")))
         self.masks = sorted(glob.glob(os.path.join(root, "mask/*.gif")))
         if subset is not None:
-            self.images = self.images[subset]
-            self.masks = self.masks[subset]
+            self.images = [self.images[i] for i in subset]
+            self.masks = [self.masks[i] for i in subset]
         self.targets = None
         if train:
             self.targets = sorted(glob.glob(os.path.join(root, "1st_manual/*.gif")))
             if subset is not None:
-                self.targets = self.targets[subset]
+                self.targets = [self.targets[i] for i in subset]
         
 
     def __len__(self):
@@ -115,10 +115,10 @@ class STAREDataset(VisionDataset):
         self.target2 = sorted(glob.glob(os.path.join(root, "annotation 2/*.png")))
         self.staple_target = sorted(glob.glob(os.path.join(root, "STAPLE/*.png")))
         if subset is not None:
-            self.images = self.images[subset]
-            self.target1 = self.target1[subset]
-            self.target2 = self.target2[subset]
-            self.staple_target = self.staple_target[subset]
+            self.images = [self.images[i] for i in subset]
+            self.target1 = [self.target1[i] for i in subset]
+            self.target2 = [self.target2[i] for i in subset]
+            self.staple_target = [self.staple_target[i] for i in subset]
         self.combination_type = combination_type
         self.green_only = green_only
 
@@ -169,10 +169,10 @@ class ARIADataset(VisionDataset):
         self.target2 = sorted(glob.glob(os.path.join(root, "annotation 2/*.tif")))
         self.staple_target = sorted(glob.glob(os.path.join(root, "STAPLE/*.png")))
         if subset is not None:
-            self.images = self.images[subset]
-            self.target1 = self.target1[subset]
-            self.target2 = self.target2[subset]
-            self.staple_target = self.staple_target[subset]
+            self.images = [self.images[i] for i in subset]
+            self.target1 = [self.target1[i] for i in subset] 
+            self.target2 = [self.target2[i] for i in subset] 
+            self.staple_target = [self.staple_target[i] for i in subset] 
         self.combination_type = combination_type
         self.green_only = green_only
 
