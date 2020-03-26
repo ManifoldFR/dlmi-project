@@ -4,6 +4,7 @@ import torch
 import cv2
 
 from utils.datasets import DriveDataset, STAREDataset, ARIADataset
+from torch.utils.data import ConcatDataset
 from config import *
 
 from albumentations import Compose, Resize, RandomSizedCrop
@@ -70,12 +71,12 @@ def denormalize(image: torch.Tensor, normalizer=None, mean=0, std=1):
     return image
 
 
-def get_datasets(name):
+def get_datasets(name: str):
     """Construct and return dataset instances for our prewritten datasets,
     along with their appropriate transforms."""
-    train_transform, val_transform = get_transforms(name)    
 
     if name == "DRIVE":
+        train_transform, val_transform = get_transforms(name)
         return {
             "train": DriveDataset("data/drive/training", transforms=train_transform, 
                                 green_only=True, train=True, subset=DRIVE_SUBSET_TRAIN),
@@ -85,6 +86,7 @@ def get_datasets(name):
                                 green_only=True, train=False)
         }
     elif name == "STARE":
+        train_transform, val_transform = get_transforms(name)
         return {
             "train": STAREDataset("data/stare", transforms=train_transform,
                                 combination_type="random", subset=STARE_SUBSET_TRAIN),
@@ -92,9 +94,19 @@ def get_datasets(name):
                                 combination_type="random", subset=STARE_SUBSET_VAL)
         }
     elif name == "ARIA":
+        train_transform, val_transform = get_transforms(name)
         return {
             "train": ARIADataset(transforms=train_transform,
                                  mode="train", combination_type="random"),
             "val": ARIADataset(transforms=val_transform,
                                mode="val", combination_type="random")
         }
+    elif '+' in name:
+        names_ = name.split("+")
+        dsets_ = [
+            get_datasets(subnam) for subnam in names_
+        ]
+        res_ = {}
+        for key in ['train', 'val', 'test']:
+            res_[key] = ConcatDataset([_d[key] for _d in dsets_ if key in _d])
+        return res_
