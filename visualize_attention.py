@@ -12,6 +12,8 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import config
 from config import PATCH_SIZE
 
+from viz_common import parser
+
 from typing import List
 import json
 import argparse
@@ -28,16 +30,9 @@ else:
     DEVICE = "cpu"
 
 
-parser = argparse.ArgumentParser(
-    "visualize-attention",
-    description="Visualize attention maps of the Attention U-Net model.")
-parser.add_argument("--weights", help="Path to model weights.")
-parser.add_argument("--img", type=str, help="Image to run the model on.", required=True)
+parser.prog = "visualize-attention"
+parser.description = "Visualize attention maps."
 
-parser.add_argument("--gray", type=bool, default=True,
-                    help="Whether to load the image in grayscale, and apply appropriate model. (default %(default)s)")
-parser.add_argument("--antialias", action='store_true',
-                    help="Use model with anti-aliased max pooling operator.")
 
 args = parser.parse_args()
 

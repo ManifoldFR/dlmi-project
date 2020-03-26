@@ -1,7 +1,6 @@
 """Perform inference on an exemple, and get the resulting activation maps."""
 import numpy as np
 import torch
-from torchvision.utils import make_grid
 from nets import MODEL_DICT
 from utils.interpretation import DownBlockActivations
 from utils import load_preprocess_image
@@ -13,9 +12,13 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import config
 from config import PATCH_SIZE
 
+from viz_common import parser
+
 from typing import List
 import json
 import argparse
+
+from torchvision.utils import make_grid
 
 with open("dataset_statistics.json") as f:
     dataset_stats_ = json.load(f)
@@ -29,18 +32,10 @@ else:
     DEVICE = "cpu"
 
 
-parser = argparse.ArgumentParser(
-    "visualize-activations",
-    description="Visualize activations in feature maps.")
-parser.add_argument("--weights", help="Path to model weights.")
-parser.add_argument("--img", type=str,
-                    help="Image to run the model on.", required=True)
+parser.prog = "visualize-activations"
+parser.description = "Visualize activations in feature maps."
 
 parser.add_argument("--model", choices=MODEL_DICT.keys())
-parser.add_argument("--gray", type=bool, default=True,
-                    help="Whether to load the image in grayscale, and apply appropriate model. (default %(default)s)")
-parser.add_argument("--antialias", action='store_true',
-                    help="Use model with anti-aliased max pooling operator.")
 parser.add_argument("--save-path", type=str,
                     help="Save the maps to a file.")
 
@@ -97,7 +92,7 @@ with torch.no_grad():
 
 
 for idx, (name, arr) in enumerate(viz_.get_maps(img_t)):
-    print(name, arr.shape)
+    print(name, arr.shape, end=' ')
     num_feats_ = arr.shape[1]
     num_rows_mul = num_feats_ // 128
     arr_grid = make_grid(arr.transpose(0, 1), nrow=16, padding=0,
@@ -113,7 +108,8 @@ for idx, (name, arr) in enumerate(viz_.get_maps(img_t)):
     fig.tight_layout()
     
     if args.save_path is not None:
-        fig.savefig("{:s}_{:s}.png".format(args.save_path, name))
+        fname = "{:s}_{:s}.png".format(args.save_path, name)
+        fig.savefig(fname, bbox_inches=None)
 
 
 plt.show()

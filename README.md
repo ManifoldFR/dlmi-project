@@ -68,14 +68,12 @@ data/aria
     - images
     - annotation 1
     - annotation 2
-    -(markupdiscfovea) 
+    - (markupdiscfovea) 
 ```
-The database contains healthy subjects (61 images, "_c_" suffix), diabetic patients (59 images, "_d_" suffix), and patients with age-related macular degeneration (23 images, "_a_" suffix).
+The database contains healthy subjects (61 images, "_c_" suffix), diabetic patients (59 images, "_d_" suffix), and patients with age-related macular degeneration (23 images, "_a_" suffix). We created a CSV file recording the 
 
-Test that the dataset and data augmentation works:
-```bash
-python utils/loaders.py
-```
+
+
 
 The data augmentation can be visualized in a [notebook](augmentations-demo.ipynb).
 
