@@ -2,7 +2,7 @@
 import numpy as np
 import torch
 from nets import AttentionUNet
-from utils.interpretation import AttentionMapHook
+from utils.interpretation import BlockActivations
 from utils import load_preprocess_image
 
 import cv2
@@ -40,12 +40,14 @@ num_channels = 1 if args.gray else 3
 
 _kwargs = {
     'num_channels': num_channels,
-    'antialias': args.antialias
+    'antialias': args.antialias,
+    'antialias_down_only': True
 }
 
 model = AttentionUNet(**_kwargs)
 if args.weights is not None:
     state_dict = torch.load(args.weights)
+    import ipdb; ipdb.set_trace()
     model.load_state_dict(state_dict['model_state_dict'])
 else:
     import warnings
@@ -57,7 +59,7 @@ model.to(DEVICE)
 img, img_t = load_preprocess_image(args.img, gray=args.gray)
 img_t = img_t.to(DEVICE)
 input_size = img.shape[:2]
-att_viz = AttentionMapHook(model, upscale=True, input_size=input_size)
+att_viz = BlockActivations(model, "att")
 
 # Perform prediction
 

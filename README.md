@@ -1,5 +1,6 @@
-## _Deep Learning for Medical Imaging_
+## Deep Learning: Retinal Vessel Segmentation
 
+![](results/figures/unet_antialias_prediction_overlay.png)
 
 ## Dependencies
 

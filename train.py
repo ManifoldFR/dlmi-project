@@ -35,6 +35,8 @@ parser.add_argument("--loss", type=str, choices=list(LOSSES_DICT.keys()),
                     default="crossentropy")
 parser.add_argument("--dataset", default="DRIVE", type=str,
                     help="Specify the dataset.")
+parser.add_argument("--weights", type=str,
+                    help="Pre-trained model weights. This will resume training.")
 parser.add_argument("--validate-every", "-ve", default=4, type=int,
                     help="Validate every X epochs (default %(default)d)")
 parser.add_argument("--epochs", "-E", default=40, type=int)
@@ -154,7 +156,11 @@ if __name__ == "__main__":
     # Make model
     model_class = MODEL_DICT[args.model]
     model = model_class(num_classes=2, **_kwargs)  # binary classification
-    model = model.to(device)
+    model.to(device)
+    
+    if args.weights is not None:
+        state_dict_ = torch.load(args.weights)
+        model.load_state_dict(state_dict_['model_state_dict'])
     
     # Define optimizer and metrics
     print("Learning rate: {:.3g}".format(args.lr))
@@ -187,7 +193,7 @@ if __name__ == "__main__":
     train_loader = DataLoader(train_dataset, BATCH_SIZE, shuffle=True)
     val_loader = DataLoader(val_dataset, BATCH_SIZE, shuffle=False)
     
-    CHECKPOINT_EVERY = 25
+    CHECKPOINT_EVERY = 50
     VALIDATE_EVERY = args.validate_every
 
     for epoch in range(EPOCHS):
@@ -218,7 +224,7 @@ if __name__ == "__main__":
             torch.save({
                 'epoch': epoch,
                 'model_state_dict': model.state_dict(),
-                # 'optimizer_state_dict': optimizer.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
                 'loss': loss,
                 'val_loss': val_loss,
                 'val_acc': val_acc,

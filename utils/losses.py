@@ -27,7 +27,8 @@ class DiceLoss(nn.Module):
             return dice_loss(input, target, self.apply_softmax)
 
 
-def dice_loss(input: torch.Tensor, target: torch.Tensor, softmax=True) -> torch.Tensor:
+def dice_loss(input: torch.Tensor, target: torch.Tensor,
+              softmax=True, smooth=EPSILON) -> torch.Tensor:
     """Regular Dice loss.
     
     Parameters
@@ -45,8 +46,8 @@ def dice_loss(input: torch.Tensor, target: torch.Tensor, softmax=True) -> torch.
         input = F.softmax(input, dim=1)
     intersect = torch.sum(input * target, dim=dims)
     denominator = torch.sum(input + target, dim=dims)
-    ratio = (intersect + EPSILON) / (denominator + EPSILON)
-    return torch.mean(1 - 2. * ratio)
+    loss = 1 - (2 * intersect + smooth) / (denominator + smooth)
+    return loss.mean()
 
 
 def soft_dice_loss(input: torch.Tensor, target: torch.Tensor, softmax=True) -> torch.Tensor:

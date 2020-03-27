@@ -81,8 +81,9 @@ def make_overlay(proba_map, max_alpha=.8):
     return prob_overlay
 
 
-def plot_with_overlay(img, probas_, figsize=None, **kwargs):
-    fig: plt.Figure = plt.figure(figsize=figsize)
+def plot_with_overlay(img, probas_, fig: plt.Figure=None, figsize=None, **kwargs):
+    if fig is None:
+        fig: plt.Figure = plt.figure(figsize=figsize)
 
     ax = fig.add_subplot(1, 3, 1)
     ax.imshow(img)
@@ -93,7 +94,6 @@ def plot_with_overlay(img, probas_, figsize=None, **kwargs):
     ax.imshow(probas_)
     ax.set_title("Proba map")
     ax.axis('off')
-    fig.tight_layout()
 
     ax = fig.add_subplot(1, 3, 3)
     ax.imshow(img, extent=[0, 1, 0, 1])

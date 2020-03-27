@@ -19,7 +19,7 @@ from config import MODEL_KWARGS
 parser = argparse.ArgumentParser(description="Perform inference on a test dataset.")
 parser.add_argument("--model", type=str, choices=MODEL_DICT.keys(),
                     help="Model class to use.", required=True)
-parser.add_argument("--output", type=str, help="Output directory path.", required=True)
+parser.add_argument("--output", "-o", type=str, help="Output directory path.", required=True)
 parser.add_argument("--weights", "-w", required=True, metavar="WEIGHTS_FILE",
                     type=str,
                     help="Model weights.")
