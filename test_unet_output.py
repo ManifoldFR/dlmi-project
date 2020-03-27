@@ -6,10 +6,10 @@ import torch.nn.functional as F
 
 
 def test_unet():
-    net = nets.UNet(num_channels=1)
+    net = nets.UNet(num_channels=1, antialias=True)
 
     # sets_ = get_datasets('DRIVE')
-    sets_ = get_datasets('ARIA')
+    sets_ = get_datasets('STARE')
     train_dataset = sets_['train']
     train_dataset.return_mask = True  # override
     # tensors, supposedly

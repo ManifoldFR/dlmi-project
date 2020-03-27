@@ -92,5 +92,5 @@ check `python visualize_attention.py -h` for options.
 
 See `visualize_activations.py`
 
-![activation_map_unet1](./results/figures/activations_unet_down1.png)
+![activation_map_unet1](./results/figures/activations_unet_antialias_down1.png)
 

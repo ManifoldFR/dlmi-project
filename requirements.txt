@@ -5,4 +5,3 @@ tensorboard
 captum>=0.2
 albumentations>=0.4.3
 gudhi>=3.1
-kornia>=0.2

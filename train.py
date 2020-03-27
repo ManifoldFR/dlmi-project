@@ -6,7 +6,7 @@ import torch
 import torch.nn.functional as F
 import tqdm
 from torch import nn
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, ConcatDataset
 from torch.utils.tensorboard import SummaryWriter
 
 from nets.unet import AttentionUNet, UNet
@@ -79,8 +79,10 @@ def train(model, loader: torch.utils.data.DataLoader, criterion, metric, optimiz
         writer.add_graph(model, img)
     
     if writer is not None:
-        # get dataset's transformer
-        transformer = loader.dataset.transforms  # assumption: dataset has transforms attr
+        if isinstance(loader.dataset, torch.utils.data.ConcatDataset):
+            transformer = loader.dataset.datasets[0].transforms
+        else:
+            transformer = loader.dataset.transforms
         mean = transformer[-2].mean  # assume second-to-last transformer is Normalizer
         std = transformer[-2].std
         fig = plot_prediction(img, output, target, mean, std)
@@ -121,9 +123,10 @@ def validate(model, loader, criterion, metric):
         outputs_ = torch.cat(outputs_)
         
         if writer is not None:
-            # get dataset's transformer
-            # assumption: dataset has transforms attr
-            transformer = loader.dataset.transforms
+            if isinstance(loader.dataset, torch.utils.data.ConcatDataset):
+                transformer = loader.dataset.datasets[0].transforms
+            else:
+                transformer = loader.dataset.transforms
             # assume second-to-last transformer is Normalizer
             mean = transformer[-2].mean
             std = transformer[-2].std

@@ -13,6 +13,8 @@ from albumentations import OneOf, Rotate, GaussianBlur, CLAHE, Lambda
 from albumentations import VerticalFlip, HorizontalFlip, Resize, Normalize
 from albumentations.pytorch import ToTensorV2 as ToTensor
 
+import json
+
 ## Define the data augmentation pipeline
 
 MAX_SIZE = 512
@@ -24,9 +26,7 @@ def _make_train_transform(mean=0, std=1):
         Rotate(90, p=.5, border_mode=cv2.BORDER_CONSTANT, value=0),
         # ElasticTransform(sigma=10, border_mode=cv2.BORDER_CONSTANT, value=0, p=.1),
         OneOf([
-            Compose([
-                RandomSizedCrop((MAX_SIZE, MAX_SIZE), PATCH_SIZE, PATCH_SIZE, p=1),
-            ], p=.8),
+            RandomSizedCrop((MAX_SIZE, MAX_SIZE), PATCH_SIZE, PATCH_SIZE, p=.8),
             Resize(PATCH_SIZE, PATCH_SIZE, p=.2),
         ], p=1),
         GaussianBlur(blur_limit=3, p=.2),
@@ -37,9 +37,6 @@ def _make_train_transform(mean=0, std=1):
     return _train
 
 
-## Use the mean and std values recorded in the JSON file !
-# Default train transform converts to Tensor
-import json
 
 with open("dataset_statistics.json") as f:
     statistics_ = json.load(f)
@@ -91,7 +88,7 @@ def get_datasets(name: str):
         return {
             "train": STAREDataset("data/stare", transforms=train_transform,
                                 combination_type="random", subset=STARE_SUBSET_TRAIN),
-            "val": STAREDataset("data/stare", transforms=train_transform,
+            "val": STAREDataset("data/stare", transforms=val_transform,
                                 combination_type="random", subset=STARE_SUBSET_VAL)
         }
     elif name == "ARIA":

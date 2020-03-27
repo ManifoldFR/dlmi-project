@@ -2,8 +2,7 @@ import torch
 from torch import nn, Tensor
 from torchvision.ops import DeformConv2d
 
-# antialiased max pooling operator
-from kornia.contrib import MaxBlurPool2d
+from nets import custom_layers
 
 
 class BasicDeformConv2d(nn.Module):
@@ -85,8 +84,9 @@ class _DownBlock(nn.Module):
         if not antialias:
             self.mp = nn.MaxPool2d(kernel_size=2)  # stride is equal to kernel_size (2)
         else:
-            self.mp = MaxBlurPool2d(kernel_size=2)  # ceil mode for consistency
-            self.mp.padding = (1, 1)  # fix some odd problem with dimensionality
+            self.mp = custom_layers.MaxBlurPool2d(kernel_size=2, channels=in_channels)
+            # self.mp = MaxBlurPool2d(kernel_size=2)  # ceil mode for consistency
+            # self.mp.padding = (1, 1)  # fix some odd problem with dimensionality
         self.conv = nn.Sequential(*layers)
 
     def forward(self, input: Tensor) -> Tensor:
@@ -101,7 +101,7 @@ class _UpBlock(nn.Module):
     Applies `~ConvBlock`, then upsampling deconvolution.
     """
 
-    def __init__(self, in_channels, out_channels, n_convs=2, n_connect=2):
+    def __init__(self, in_channels, out_channels, n_convs=2, n_connect=2, antialias=False):
         """
         
         Parameters
@@ -111,6 +111,7 @@ class _UpBlock(nn.Module):
             the upsampling convolution (useful for skip connections).
         """
         super().__init__()
+        self.antialias = antialias
         layers = [
             # expects multiple of channels
             ConvBlock(n_connect * in_channels, in_channels)
@@ -120,14 +121,15 @@ class _UpBlock(nn.Module):
         ]
         self.conv = nn.Sequential(*layers)
         # counts as one convolution
-        self.upconv = nn.ConvTranspose2d(in_channels, out_channels,
-                                         2, stride=2)
+        if not self.antialias:
+            self.upconv = nn.ConvTranspose2d(in_channels, out_channels,
+                                            kernel_size=2, stride=2)
+        else:
+            self.upconv = custom_layers.BlurConvTranspose(in_channels, out_channels,
+                                                          kernel_size=2, stride=2)
 
     def forward(self, x: Tensor, skip: Tensor) -> Tensor:
-        try:
-            z = torch.cat((skip, x), dim=1)
-        except:
-            import ipdb; ipdb.set_trace()
+        z = torch.cat((skip, x), dim=1)
         z = self.conv(z)
         out = self.upconv(z)  # deconvolve
         return out
@@ -139,7 +141,8 @@ class UNet(nn.Module):
     See https://arxiv.org/pdf/1505.04597.pdf 
     """
 
-    def __init__(self, num_channels: int=3, num_classes: int=2, antialias=False):
+    def __init__(self, num_channels: int=3, num_classes: int=2, antialias=False,
+                 antialias_down_only=True):
         """Initialize a U-Net.
         
         Parameters
@@ -153,6 +156,8 @@ class UNet(nn.Module):
         self.num_channels = num_channels
         self.num_classes = num_classes
         self.antialias = antialias
+        # whether to use blur conv transpose on the upsampling path
+        self.antialias_up = self.antialias and not(antialias_down_only)
 
         self.in_conv = nn.Sequential(
             ConvBlock(num_channels, 64),
@@ -169,9 +174,9 @@ class UNet(nn.Module):
         )
 
         # reminder: convolves then upsamples
-        self.up1 = _UpBlock(512, 256)
-        self.up2 = _UpBlock(256, 128)
-        self.up3 = _UpBlock(128, 64)
+        self.up1 = _UpBlock(512, 256, antialias=self.antialias_up)
+        self.up2 = _UpBlock(256, 128, antialias=self.antialias_up)
+        self.up3 = _UpBlock(128, 64, antialias=self.antialias_up)
 
         self.out_conv = nn.Sequential(
             ConvBlock(128, 64),
@@ -255,7 +260,7 @@ class AttentionUNet(nn.Module):
     """
 
     def __init__(self, num_channels: int=3, num_classes: int=2, gate_feat_dims: list = None,
-                 antialias: bool=False):
+                 antialias: bool=False, antialias_down_only=True):
         """
         
         Parameters
@@ -273,6 +278,8 @@ class AttentionUNet(nn.Module):
         self.num_channels = num_channels
         self.num_classes = num_classes
         self.antialias = antialias
+        # whether to use blur conv transpose on the upsampling path
+        self.antialias_up = self.antialias and not(antialias_down_only)
         
         self.in_conv = nn.Sequential(
             ConvBlock(num_channels, 64),
@@ -296,11 +303,11 @@ class AttentionUNet(nn.Module):
 
         # reminder: convolves then upsamples
         self.att1 = AttentionGate(512, 512, self.gate_feat_dims[0])
-        self.up1 = _UpBlock(512, 256)
+        self.up1 = _UpBlock(512, 256, self.antialias_up)
         self.att2 = AttentionGate(256, 256, self.gate_feat_dims[1])
-        self.up2 = _UpBlock(256, 128)
+        self.up2 = _UpBlock(256, 128, self.antialias_up)
         self.att3 = AttentionGate(128, 128, self.gate_feat_dims[2])
-        self.up3 = _UpBlock(128, 64)
+        self.up3 = _UpBlock(128, 64, self.antialias_up)
 
         self.att4 = AttentionGate(64, 64, self.gate_feat_dims[3])
         self.out_conv = nn.Sequential(

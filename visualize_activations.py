@@ -46,7 +46,8 @@ num_channels = 1 if args.gray else 3
 
 _kwargs = {
     'num_channels': num_channels,
-    'antialias': args.antialias
+    'antialias': args.antialias,
+    'antialias_down_only': False
 }
 
 print("Model class: {:s}".format(args.model))

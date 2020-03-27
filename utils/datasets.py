@@ -159,6 +159,7 @@ class STAREDataset(VisionDataset):
             if self.green_only:
                 img = img[[1]]
             target = augmented['mask']
+            target = target.long() / 255
         return img, target
 
     def combine_multiple_targets(self, t1, t2):

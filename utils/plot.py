@@ -66,11 +66,18 @@ def plot_prediction(img: torch.Tensor, pred_mask: torch.Tensor, target: torch.Te
     fig.tight_layout()
     return fig
 
-def make_overlay(proba_map):
+def make_overlay(proba_map, max_alpha=.8):
     """Make transparent overlay image from probability map to
-    superimpose over input for plotting."""
+    superimpose over input for plotting.
+    
+    Parameters
+    ----------
+    max_alpha : float
+        Maximum alpha for the overlay map.
+    """
     prob_overlay = np.ones(proba_map.shape + (4,))
-    prob_overlay[..., 3] = proba_map
+    prob_overlay[..., [0, 1]] = 0
+    prob_overlay[..., 3] = proba_map * max_alpha
     return prob_overlay
 
 
