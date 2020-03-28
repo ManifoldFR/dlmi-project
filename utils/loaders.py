@@ -24,11 +24,11 @@ def _make_train_transform(mean=0, std=1):
         HorizontalFlip(),
         VerticalFlip(),
         Rotate(90, p=.5, border_mode=cv2.BORDER_CONSTANT, value=0),
-        # ElasticTransform(sigma=10, border_mode=cv2.BORDER_CONSTANT, value=0, p=.1),
         OneOf([
             RandomSizedCrop((MAX_SIZE, MAX_SIZE), PATCH_SIZE, PATCH_SIZE, p=.8),
             Resize(PATCH_SIZE, PATCH_SIZE, p=.2),
         ], p=1),
+        # ElasticTransform(sigma=10, border_mode=cv2.BORDER_CONSTANT, value=0, p=.1),
         GaussianBlur(blur_limit=3, p=.2),
         CLAHE(always_apply=True),
         Normalize(mean, std, always_apply=True),

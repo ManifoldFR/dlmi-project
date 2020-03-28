@@ -13,7 +13,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import config
 from config import PATCH_SIZE
 
-from viz_common import parser
+from viz_common import parser, _kwargs
 
 from typing import List
 import json
@@ -40,13 +40,7 @@ parser.add_argument("--model", choices=MODEL_DICT.keys())
 
 args = parser.parse_args()
 
-num_channels = 1 if args.gray else 3
 
-_kwargs = {
-    'num_channels': num_channels,
-    'antialias': args.antialias,
-    'antialias_down_only': True
-}
 
 print("Model class: {:s}".format(args.model))
 model_cls = MODEL_DICT[args.model]

@@ -16,7 +16,7 @@ from utils.plot import plot_prediction
 from utils.loaders import denormalize, get_datasets
 
 import config
-from config import MODEL_KWARGS
+from config import MODEL_KWARGS, PATCH_SIZE, parser as base_parser
 
 
 
@@ -28,7 +28,7 @@ LOSSES_DICT = {
     "combined": losses.CombinedLoss()
 }
 
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(parents=[base_parser])
 parser.add_argument("--model", type=str, choices=list(MODEL_DICT.keys()),
                     required=True)
 parser.add_argument("--loss", type=str, choices=list(LOSSES_DICT.keys()),
@@ -80,7 +80,8 @@ def train(model, loader: torch.utils.data.DataLoader, criterion, metric, optimiz
         # only for the first epoch
         writer.add_graph(model, img)
     
-    if writer is not None:
+    # plot a prediction, every 4 epochs
+    if writer is not None and (epoch + 1) % 4 == 0:
         if isinstance(loader.dataset, torch.utils.data.ConcatDataset):
             transformer = loader.dataset.datasets[0].transforms
         else:
@@ -145,13 +146,15 @@ if __name__ == "__main__":
     
     _kwargs = MODEL_KWARGS.copy()
     
-    
     EPOCHS = args.epochs
     BATCH_SIZE = args.batch_size
     
     print("Training model %s" % args.model)
     if _kwargs['antialias']:
         print("  with antialiased maxpooling")
+    if not _kwargs['antialias_down_only']:
+        print("  and antialiased upsampling")
+    print("Input size: ({:d}, {:d})".format(PATCH_SIZE, PATCH_SIZE))
     
     # Make model
     model_class = MODEL_DICT[args.model]
