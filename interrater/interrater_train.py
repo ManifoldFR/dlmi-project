@@ -288,7 +288,7 @@ print("Final train loss : ", save_perf["train_loss"][epochs-1])
 print("Final valid loss : ", save_perf["val_loss"][epochs-1])
 print("Ratio between valid and train loss : ", save_perf["val_loss"][epochs-1]/save_perf["train_loss"][epochs-1])
 
-name_append = str(lr)+"_"+str(epochs)+"_"+str(batch_size)+"_"+str(num_pool)+"_"+interrater_metrics
+name_append = str(lr)+"_"+str(epochs)+"_"+str(batch_size)+"_"+str(num_pool)+"_"+interrater_metrics+"_"+str(SIZE)+"_"+str(normalize_dataset)
 
 save_perf["config"] = {"lr":lr, "epochs":epochs, "batch_size":batch_size, "model_name":model_name, 
          "loss_name":loss_name, "validate_every":validate_every, "num_pool":num_pool,"dataset":dataset, 
@@ -305,7 +305,6 @@ write_sumup(save_perf)
 
 ### Plot results
 start_ep = 1
-from interrater.config import dataset, transforms_name, interrater_metrics, test_in_train, normalize_dataset
 plot_loss(save_perf, epochs, validate_every, start_at_epoch = start_ep, save = True, name= "plot_loss"+name_append, root = "figures")
 plot_metrics("mae",save_perf, epochs, validate_every, start_at_epoch = start_ep, save = True, name= "plot_metric"+name_append, root = "figures")
 plot_metrics("max_error",save_perf, epochs, validate_every, start_at_epoch = start_ep, save = True, name= "plot_metric"+name_append, root = "figures")
