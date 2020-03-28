@@ -89,7 +89,7 @@ class InterraterNet(nn.Module):
         x3 = self.down2(x2)  # 256 * 1/4 * 1/4
         x4 = self.down3(x3)  # 512 * 1/8 * 1/8
         x4_flatten = x4.view(1, x4.size()[0], -1)
-        print("flatten size", x4_flatten.size())
+#        print("flatten size", x4_flatten.size())
         x4_interpolate = F.interpolate(input = x4_flatten, size = self.interpolate_dim)
         out = self.fc(x4_interpolate)
         out = out.view(x4.size()[0])

@@ -50,8 +50,9 @@ MAX_SIZE = int(448/ratio)
 print("CONFIG SIZE : ",SIZE,", MAX SIZE ",MAX_SIZE)
 
 ### Training params
-epochs = 23
-#epochs = 20
+#epochs=200
+epochs = 100
+#epochs = 23
 #epochs = 15
 #epochs = 10
 #batch_size = 5
@@ -61,8 +62,14 @@ batch_size = 1
 #model = "InterraterNet"
 model = "InterraterNet_pool"
 model_name = model
-#num_pool = 10
-num_pool = 4
+num_pool = 20
+#num_pool = 80
+#num_pool = 8
+#num_pool = 6
+#num_pool = 6
+#num_pool = 4
+#num_pool = 2
+#num_pool = 0
 
 #lr = 1
 #lr = 1e-1
@@ -73,8 +80,8 @@ lr = 5e-3
 
 
 #transforms_name = "None"
-#transforms_name = "make_train_transform"
-transforms_name = "make_basic_train_transform"
+transforms_name = "make_train_transform"
+#transforms_name = "make_basic_train_transform"
 
 interrater_metrics = "IoU"
 #interrater_metrics = "entropy"
@@ -92,6 +99,7 @@ print("metrics used in config : ", interrater_metrics)
 loss = "MSE"
 loss_name = loss
 
+#normalize_dataset = True
 normalize_dataset = False
 
 validate_every = 1
