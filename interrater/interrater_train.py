@@ -11,18 +11,11 @@ import tqdm
 from torch import nn
 from torch.utils.data import DataLoader
 
-#from ignite.contrib.metrics import regression as regmetrics
 import sklearn.metrics as skm
-
-
-#from interrater.config import *
 from interrater.config import lr, epochs, batch_size, model, loss, validate_every, num_pool
 from interrater.config import dataset, transforms_name, interrater_metrics, test_in_train, normalize_dataset
 from interrater.config import model_name, SIZE, MAX_SIZE, loss_name, sub_val, shuffled_DB
 from interrater.utils.loaders import *
-#from interrater.nets import *
-#from interrater.utils.loaders import DATASET_MAP
-#from interrater.nets import InterraterNet
 from interrater.nets import MODEL_DICT
 from interrater.utils.plot import *
 
@@ -35,18 +28,6 @@ LOSSES_DICT = {
     "MSE": nn.MSELoss()
 }
 
-#parser = argparse.ArgumentParser()
-#parser.add_argument("--model", type=str, choices=list(MODEL_DICT.keys()),
-#                    required=True)
-#parser.add_argument("--loss", type=str, choices=list(LOSSES_DICT.keys()),
-#                    default="MSE")
-#parser.add_argument("--dataset", default="STARE", type=str,
-#                    help="Specify the dataset.")
-#parser.add_argument("--validate-every", "-ve", default=4, type=int,
-#                    help="Validate every X epochs (default %(default)d)")
-#parser.add_argument("--epochs", "-E", default=40, type=int)
-#parser.add_argument("--batch-size", "-B", default=1, type=int)
-#parser.add_argument("--lr", "-lr", default=2e-5, type=float)
 
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -67,10 +48,6 @@ def train(model, loader: torch.utils.data.DataLoader, criterion, metric, optimiz
         target = target.to(device)
         output = model(img)
         loss = criterion(output, target)
-#        print("train it")
-#        print(target)
-#        print(output)
-#        print(loss)
         
         loss.backward()
         optimizer.step()
@@ -110,10 +87,6 @@ def validate(model, loader, criterion, metric):
             target = target.to(device)
             output = model(img)
             loss = criterion(output, target)
-#            print("val it")
-#            print(target)
-#            print(output)
-#            print(loss)
             
             all_loss.append(loss.item())
             # Store the img, target, prediction for plotting
@@ -143,9 +116,6 @@ if test_in_train == True :
     # Make model
     model_class = MODEL_DICT[model]
     
-    ##++##++##++##++##++##++##++##++##++##++##++
-    ##++ to modify
-    ##++##++##++##++##++##++##++##++##++##++##++
     if model == "Interraternet_pool" : 
         model = model_class(num_pool = num_pool, num_channels=1)  
     else :
@@ -209,80 +179,8 @@ if test_in_train == True :
             }, save_path)
 
 
-#if __name__ == "__main__":
-#    os.makedirs("models", exist_ok=True)
-#    print("Using device %s" % device)
-#    args = parser.parse_args()
-#    
-#    EPOCHS = args.epochs
-#    BATCH_SIZE = args.batch_size
-#    
-#    print("Training model %s" % args.model)
-#    
-#    
-#    # Make model
-#    model_class = MODEL_DICT[args.model]
-#    
-#    ##++##++##++##++##++##++##++##++##++##++##++
-#    ##++ to modify
-#    ##++##++##++##++##++##++##++##++##++##++##++
-#    model = model_class(num_channels=1)  
-#    model = model.to(device)
-#    
-#    # Define optimizer and metrics
-#    print("Learning rate: {:.3g}".format(args.lr))
-#    print("Using loss {:s}".format(args.loss))
-#    optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
-#    criterion = LOSSES_DICT[args.loss]
-#    metric_dict = {
-#        "mse" : skm.mean_squared_error,
-#        "mae" : skm.mean_absolute_error,
-#        "max_error" : skm.max_error,
-#        "explained_var_score" : skm.explained_variance_score,
-#        "r2" : skm.r2_score
-#    }
-#    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.8)
-#
-#    # Define dataset
-#    DATASET = args.dataset
-#    train_dataset = DATASET_MAP[DATASET]['train']
-#    val_dataset = DATASET_MAP[DATASET]['val']
-#    
-#    # Define loaders
-#    train_loader = DataLoader(train_dataset, BATCH_SIZE, shuffle=True)
-#    val_loader = DataLoader(val_dataset, BATCH_SIZE, shuffle=False)
-#    
-#    CHECKPOINT_EVERY = 20
-#    VALIDATE_EVERY = args.validate_every
-#
-#    for epoch in range(EPOCHS):
-#        loss, acc = train(model, train_loader, criterion, metric_dict, optimizer, epoch)
-#        scheduler.step()
-#
-#        
-#        if (epoch + 1) % VALIDATE_EVERY == 0:
-#            val_loss, val_acc, val_detail = validate(model, val_loader, criterion, metric_dict)
-#            print("Epoch {:d}: Train loss {:.3g} -- MAE {:.3g} | Validation loss {:.3g} -- MAE {:.3g}".format(
-#                epoch, loss, acc["mae"], val_loss, val_acc["mae"]))
-#            
-#        
-#        if epoch > 0 and ((epoch+1) % CHECKPOINT_EVERY == 0):
-#            
-#            t=datetime.datetime.now()
-#            save_path = "interrater/models/inter_%s_%03d.pth" % ("d"+str(t.day)+"m"+str(t.minute)+"s"+str(t.second), epoch)
-#            print("Saving checkpoint {:s} at epoch {:d}".format(save_path, epoch))
-#            # Save checkpoint
-#            torch.save({
-#                'epoch': epoch,
-#                'model_state_dict': model.state_dict(),
-#                'optimizer_state_dict': optimizer.state_dict(),
-#                'loss': loss,
-#                'val_loss': val_loss,
-#                'val_acc': val_acc,
-#                'val_detail' : val_detail
-#            }, save_path)
 
-
+### Print and save predictions
 
 print("Final train loss : ", save_perf["train_loss"][epochs-1])
 print("Final valid loss : ", save_perf["val_loss"][epochs-1])
@@ -321,9 +219,6 @@ import pickle as pkl
 pkl.dump({"target":target,"output":output}, open(os.path.join("interrater", "figures",str(name_append+'.pkl')), 'wb'))
 
 
-
-
-
 #print("interrater metrics in train file : ",interrater_metrics)
 
 
@@ -342,25 +237,6 @@ plt.xlabel(interrater_metrics)
 plt.ylabel("Number of images")
 plt.show()
  
-
-
-#for metric in ["IoU","entropy"]:
-#    plt.hist(target_dict[dataset.lower()][metrics][:107],bins = 30)
-#    plt.title("Distribution of "+metric+ " in the ARIA train")
-#    plt.xlabel(metric)
-#    plt.ylabel("Number of images")
-#    plt.show()
-#    
-#    plt.hist(target_dict[dataset.lower()][metrics],bins = 30)
-#    plt.title("Distribution of "+metric+" in the ARIA dataset")
-#    plt.xlabel(metric)
-#    plt.ylabel("Number of images")
-#    plt.show()
-
-
-
-
-
 
 
 
