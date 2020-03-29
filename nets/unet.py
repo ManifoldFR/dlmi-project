@@ -1,69 +1,9 @@
 import torch
 from torch import nn, Tensor
-from torchvision.ops import DeformConv2d
 
 from nets import custom_layers
+from .custom_layers import ConvBlock
 
-
-class BasicDeformConv2d(nn.Module):
-    """Basic deformable Conv2d block, with offset computed from learnable Conv2d layer.
-    
-    Straight from torchvision docs."""
-    def __init__(self, in_channels, out_channels, kernel_size=1, stride=1,
-                 dilation=1, groups=1, offset_groups=1):
-        super().__init__()
-        offset_channels = 2 * kernel_size * kernel_size
-        self.conv2d_offset = nn.Conv2d(
-            in_channels,
-            offset_channels * offset_groups,
-            kernel_size=3,
-            stride=stride,
-            padding=dilation,
-            dilation=dilation,
-        )
-        self.conv2d = DeformConv2d(
-            in_channels,
-            out_channels,
-            kernel_size=kernel_size,
-            stride=stride,
-            padding=dilation,
-            dilation=dilation,
-            groups=groups,
-            bias=False
-        )
-
-    def forward(self, x):
-        offset = self.conv2d_offset(x)
-        return self.conv2d(x, offset)
-
-
-class ConvBlock(nn.Module):
-    """Basic convolutional block."""
-
-    def __init__(self, in_channels, out_channels, norm='batch', deformable=False):
-        super().__init__()
-        # choice of padding=1 keeps
-        # feature map dimensions identical
-        if not deformable:
-            self.conv = nn.Conv2d(in_channels, out_channels, 3, padding=1)
-        else:
-            self.conv = BasicDeformConv2d(in_channels, out_channels, 3, dilation=1)
-        if norm == 'batch':
-            self.bn = nn.BatchNorm2d(out_channels)
-        elif norm == 'group':
-            num_groups = out_channels // 8
-            self.bn = nn.GroupNorm(num_groups, out_channels)
-        elif norm is None:
-            self.bn = nn.Identity()
-        else:
-            raise TypeError("Wrong type of normalization layer provided for ConvBlock")
-        self.activation = nn.ReLU(inplace=True)
-
-    def forward(self, x: Tensor):
-        x = self.conv(x)
-        x = self.bn(x)
-        x = self.activation(x)
-        return x
 
 
 class _DownBlock(nn.Module):
@@ -128,8 +68,11 @@ class _UpBlock(nn.Module):
             self.upconv = custom_layers.BlurConvTranspose(in_channels, out_channels,
                                                           kernel_size=2, stride=2)
 
-    def forward(self, x: Tensor, skip: Tensor) -> Tensor:
-        z = torch.cat((skip, x), dim=1)
+    def forward(self, x: Tensor, skip: Tensor=None) -> Tensor:
+        if skip is not None:
+            z = torch.cat((skip, x), dim=1)
+        else:
+            z = x
         z = self.conv(z)
         out = self.upconv(z)  # deconvolve
         return out
