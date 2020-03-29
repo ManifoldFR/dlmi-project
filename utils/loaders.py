@@ -24,11 +24,11 @@ def _make_train_transform(mean=0, std=1):
         HorizontalFlip(),
         VerticalFlip(),
         Rotate(90, p=.5, border_mode=cv2.BORDER_CONSTANT, value=0),
-        # ElasticTransform(sigma=10, border_mode=cv2.BORDER_CONSTANT, value=0, p=.1),
         OneOf([
             RandomSizedCrop((MAX_SIZE, MAX_SIZE), PATCH_SIZE, PATCH_SIZE, p=.8),
             Resize(PATCH_SIZE, PATCH_SIZE, p=.2),
         ], p=1),
+        # ElasticTransform(sigma=10, border_mode=cv2.BORDER_CONSTANT, value=0, p=.1),
         GaussianBlur(blur_limit=3, p=.2),
         CLAHE(always_apply=True),
         Normalize(mean, std, always_apply=True),
@@ -69,7 +69,7 @@ def denormalize(image: torch.Tensor, normalizer=None, mean=0, std=1):
     return image
 
 
-def get_datasets(name: str):
+def get_datasets(name: str, **kwargs):
     """Construct and return dataset instances for our prewritten datasets,
     along with their appropriate transforms."""
 
@@ -95,14 +95,14 @@ def get_datasets(name: str):
         train_transform, val_transform = get_transforms(name)
         return {
             "train": ARIADataset(transforms=train_transform,
-                                 mode="train", combination_type="random"),
+                                 mode="train", combination_type="random", **kwargs),
             "val": ARIADataset(transforms=val_transform,
-                               mode="val", combination_type="random")
+                               mode="val", combination_type="random", **kwargs)
         }
     elif '+' in name:
         names_ = name.split("+")
         dsets_ = [
-            get_datasets(subnam) for subnam in names_
+            get_datasets(subnam, **kwargs) for subnam in names_
         ]
         res_ = {}
         for key in ['train', 'val', 'test']:

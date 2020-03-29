@@ -3,7 +3,7 @@ import numpy as np
 import torch
 from nets import MODEL_DICT
 from utils.interpretation import BlockActivations
-from utils import load_preprocess_image
+from utils import load_preprocess_image, preprocess_image
 from utils.plot import plot_with_overlay
 
 import cv2
@@ -13,7 +13,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import config
 from config import PATCH_SIZE
 
-from viz_common import parser
+from viz_common import parser, _kwargs
 
 from typing import List
 import json
@@ -40,19 +40,12 @@ parser.add_argument("--model", choices=MODEL_DICT.keys())
 
 args = parser.parse_args()
 
-num_channels = 1 if args.gray else 3
 
-_kwargs = {
-    'num_channels': num_channels,
-    'antialias': args.antialias,
-    'antialias_down_only': True
-}
 
 print("Model class: {:s}".format(args.model))
 model_cls = MODEL_DICT[args.model]
 
 model = model_cls(**_kwargs)
-
 if args.weights is not None:
     state_dict = torch.load(args.weights)
     model.load_state_dict(state_dict['model_state_dict'])
@@ -88,7 +81,6 @@ for idx, (name, arr) in enumerate(viz_.get_maps(img_t)):
     arr_grid = make_grid(arr.transpose(0, 1), nrow=16, padding=0,
                          normalize=True, scale_each=True)
     arr_grid = arr_grid[0]
-    print("grid:", arr_grid.shape)
 
     fig: plt.Figure = plt.figure(figsize=(10, num_rows_mul * 5), dpi=100)
     ax = fig.add_subplot()
@@ -103,3 +95,61 @@ for idx, (name, arr) in enumerate(viz_.get_maps(img_t)):
 
 
 plt.show()
+
+
+CHECK_ROBUST = True
+
+
+
+def attack_image(img):
+    """
+    Parameters
+    ----------
+    img
+        Input image.
+    """
+    from albumentations.augmentations.functional import shift_scale_rotate
+    img1 = shift_scale_rotate(img, 0, 1.5, 0, 0)
+    img2 = shift_scale_rotate(img, 0, 1.5, .3, -.2)
+    
+    # plt.subplot(121)
+    # plt.imshow(img1)
+    
+    # plt.subplot(122)
+    # plt.imshow(img2)
+    # plt.show()
+    
+    img1_t = preprocess_image(img1).to(DEVICE)
+    img2_t = preprocess_image(img2).to(DEVICE)
+
+    maps1_ = viz_.get_maps(img1_t)
+    maps2_ = viz_.get_maps(img2_t)
+    
+    for idx, ((name, arr1), (_, arr2)) in enumerate(zip(maps1_, maps2_)):
+        if idx > 0:
+            continue
+        print(name, arr1.shape, end=' ')
+        num_feats_ = arr1.shape[1]
+        num_rows_mul = num_feats_ // 128
+        arr1_grid = make_grid(arr1.transpose(0, 1), nrow=16, padding=0,
+                            normalize=True, scale_each=True)[0]
+        arr2_grid = make_grid(arr2.transpose(0, 1), nrow=16, padding=0,
+                              normalize=True, scale_each=True)[0]
+
+        fig: plt.Figure = plt.figure(figsize=(8, 8))
+        ax = plt.subplot(2,1,1)
+        ims_ = ax.imshow(arr1_grid, cmap='viridis')
+        ax.set_title("Initial image")
+
+        ax = plt.subplot(2,1,2)
+        ims_ = ax.imshow(arr2_grid, cmap='viridis')
+        ax.set_title("Shifted image")
+        fig.suptitle("Activations: {:s}".format(name))
+        
+        fig.tight_layout()
+
+if CHECK_ROBUST:
+
+    attack_image(img)
+    plt.show()
+    

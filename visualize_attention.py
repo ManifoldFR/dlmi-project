@@ -12,7 +12,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import config
 from config import PATCH_SIZE
 
-from viz_common import parser
+from viz_common import parser, _kwargs
 
 from typing import List
 import json
@@ -36,18 +36,9 @@ parser.description = "Visualize attention maps."
 
 args = parser.parse_args()
 
-num_channels = 1 if args.gray else 3
-
-_kwargs = {
-    'num_channels': num_channels,
-    'antialias': args.antialias,
-    'antialias_down_only': True
-}
-
 model = AttentionUNet(**_kwargs)
 if args.weights is not None:
     state_dict = torch.load(args.weights)
-    import ipdb; ipdb.set_trace()
     model.load_state_dict(state_dict['model_state_dict'])
 else:
     import warnings
@@ -89,7 +80,7 @@ ax.imshow(probas_)
 ax.set_title("Proba map")
 ax.axis('off')
 
-for idx, (name, arr) in enumerate(att_viz.get_maps()):
+for idx, (name, arr) in enumerate(att_viz.get_maps(img_t)):
     i_loc = 2 * idx + 4
     arr = arr[0, 0]
     ax = fig.add_subplot(gs[i_loc:i_loc+2])
@@ -106,3 +97,6 @@ for idx, (name, arr) in enumerate(att_viz.get_maps()):
 fig.tight_layout()
 plt.show()
 
+if args.save_path is not None:
+    fname = "{:s}.png".format(args.save_path)
+    fig.savefig(fname, bbox_inches=None)
