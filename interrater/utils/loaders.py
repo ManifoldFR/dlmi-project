@@ -68,6 +68,9 @@ def get_datasets(dataset_name, transform_name, interrater_metrics, normalize = T
     ## Use the mean and std values recorded in the JSON file !
     # Default train transform converts to Tensor
     
+    from interrater.config import ARIA_SUBSET_TEST, ARIA_SUBSET_TRAIN, ARIA_SUBSET_VAL, STARE_SUBSET_TRAIN, STARE_SUBSET_VAL
+    
+    
     with open("dataset_statistics.json") as f:
         statistics_ = json.load(f)
     
@@ -100,6 +103,8 @@ def get_datasets(dataset_name, transform_name, interrater_metrics, normalize = T
             "train": ARIADataset("data/", transforms=config_transform,
                           metrics=interrater_metrics, subset=ARIA_SUBSET_TRAIN),
             "val": ARIADataset("data/", transforms=config_transform,
-                          metrics=interrater_metrics, subset=ARIA_SUBSET_VAL)
+                          metrics=interrater_metrics, subset=ARIA_SUBSET_VAL),
+            "test":  ARIADataset("data/", transforms=config_transform,
+                          metrics=interrater_metrics, subset=ARIA_SUBSET_TEST)
         }
 
