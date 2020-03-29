@@ -69,7 +69,7 @@ def denormalize(image: torch.Tensor, normalizer=None, mean=0, std=1):
     return image
 
 
-def get_datasets(name: str):
+def get_datasets(name: str, **kwargs):
     """Construct and return dataset instances for our prewritten datasets,
     along with their appropriate transforms."""
 
@@ -95,14 +95,14 @@ def get_datasets(name: str):
         train_transform, val_transform = get_transforms(name)
         return {
             "train": ARIADataset(transforms=train_transform,
-                                 mode="train", combination_type="random"),
+                                 mode="train", combination_type="random", **kwargs),
             "val": ARIADataset(transforms=val_transform,
-                               mode="val", combination_type="random")
+                               mode="val", combination_type="random", **kwargs)
         }
     elif '+' in name:
         names_ = name.split("+")
         dsets_ = [
-            get_datasets(subnam) for subnam in names_
+            get_datasets(subnam, **kwargs) for subnam in names_
         ]
         res_ = {}
         for key in ['train', 'val', 'test']:

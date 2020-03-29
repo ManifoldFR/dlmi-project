@@ -179,7 +179,7 @@ class ARIADataset(VisionDataset):
         Only use the green channel (idx 1).
     """
     def __init__(self, data_file: str="data/aria/aria_df.csv", root="data/aria", mode="train", transforms=None,
-                 combination_type="STAPLE", subset=None, green_only=True):
+                 combination_type="STAPLE", subset=None, green_only=True, get_disks=False):
         """
         
         Parameters
@@ -189,12 +189,18 @@ class ARIADataset(VisionDataset):
         """
         super().__init__(root, transforms=transforms)
         self._data = pd.read_csv(data_file)
+        self.get_disks = get_disks
         self._data = self._data[self._data[mode] == 1]
+        if self.get_disks:
+            # take data with disks
+            self._data = self._data[self._data['disc_fovea_available'] == 1]
 
         self.images = _assemble_list((self.root, 'images'), self._data['file_img'])
         self.target1 = _assemble_list((self.root, 'annotation 1'), self._data['annot1'])
         self.target2 = _assemble_list((self.root, 'annotation 2'), self._data['annot2'])
         self.staple_target = _assemble_list((self.root, 'STAPLE'), self._data['STAPLE'])
+        if self.get_disks:
+            self.disks = _assemble_list((self.root, 'markupdiscfovea'), self._data['disc_fovea'])
         self.combination_type = combination_type
         self.green_only = green_only
 
@@ -213,14 +219,27 @@ class ARIADataset(VisionDataset):
             t2 = cv2.imread(self.target2[index], cv2.IMREAD_UNCHANGED)
             target = self.combine_multiple_targets(t1, t2)
             
+        if self.get_disks:
+            target_disk = cv2.imread(self.disks[index], cv2.IMREAD_UNCHANGED)
+        
         if self.transforms is not None:
-            augmented = self.transforms(image=img, mask=target)
+            if self.get_disks:
+                augmented = self.transforms(image=img, masks=[target, target_disk])
+            else:
+                augmented = self.transforms(image=img, mask=target)
             img = augmented['image']
             # pick only green channel
             if self.green_only:
                 img = img[[1]]
-            target = augmented['mask'].long() / 255
-        return img, target
+            if self.get_disks:
+                target = torch.from_numpy(augmented['masks'][0]).long() / 255
+                target_disk = torch.from_numpy(augmented['masks'][1]).long() / 255
+            else:
+                target = augmented['mask'].long() / 255
+        if self.get_disks:
+            return img, target, target_disk
+        else:
+            return img, target
 
     def combine_multiple_targets(self, t1, t2):
         return _combine_multiple_targets(t1, t2, self.combination_type)
