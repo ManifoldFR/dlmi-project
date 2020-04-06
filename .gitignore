@@ -43,3 +43,5 @@ runs/
 
 # Test set inference results
 *_predictions/
+interrater/models/perf_df_clean_latex.txt
+interrater/models/perf_df_clean_latex2.txt
